@@ -54,7 +54,7 @@ interface Player {
 
               <button
                 (click)="resetGame()"
-                [disabled]="timeRemaining > 0"
+                [disabled]="!gameFinished && timeRemaining > 0"
                 class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -197,6 +197,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   timeRemaining = 30 * 60;
   isTimerRunning = false;
   gameStarted = false;
+  gameFinished = false;
   
   private timerInterval: any;
 
@@ -381,6 +382,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       this.currentFrame = 0;
       this.currentRoll = 0;
       this.isTimerRunning = false;
+      this.gameFinished = true;
     }
   }
 
@@ -395,6 +397,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.timeRemaining = this.timeLimit * 60;
     this.isTimerRunning = false;
     this.gameStarted = false;
+    this.gameFinished = false;
   }
 
   startGame() {
