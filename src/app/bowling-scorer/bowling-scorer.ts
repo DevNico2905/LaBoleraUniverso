@@ -17,7 +17,7 @@ interface Player {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-      <div class="max-w-7xl mx-auto">
+      <div class="max-w-[95%]">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
@@ -164,17 +164,17 @@ interface Player {
             </div>
           </div>
 
-          <div *ngIf="gameStarted" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-6 text-white">
-            <div class="text-center mb-4">
+          <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-6 text-white">
+            <div class="text-center mb-3">
               <h2 class="text-2xl font-bold">
                 {{ players[currentPlayer].name }} - Frame {{ currentFrame + 1 }} - Tiro {{ currentRoll + 1 }}
               </h2>
-              <p class="text-sm mt-2 opacity-90">Usa el teclado (0-9) o haz clic en los botones</p>
+              <p class="text-sm mt-1 opacity-90">Usa el teclado (0-9) o haz clic en los botones</p>
             </div>
             <div class="grid grid-cols-11 gap-2 max-w-3xl mx-auto">
               <button *ngFor="let num of [].constructor(getAvailablePins() + 1); let i = index"
                       (click)="recordPins(i)"
-                      class="bg-white text-gray-900 hover:bg-yellow-400 font-bold py-6 px-4 rounded-lg text-2xl transition transform hover:scale-105 shadow-lg">
+                      class="bg-white text-gray-900 hover:bg-yellow-400 font-bold py-4 px-1 rounded-lg text-2xl transition transform hover:scale-105 shadow-lg">
                 {{ i }}
               </button>
             </div>
@@ -211,7 +211,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyPress(event: KeyboardEvent) {
-    if (!this.gameStarted) return;
+    if (!this.gameStarted || this.gameFinished) return;
     
     const num = parseInt(event.key);
     if (!isNaN(num) && num >= 0 && num <= this.getAvailablePins()) {
@@ -332,7 +332,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   }
 
   recordPins(pins: number) {
-    if (!this.gameStarted) return;
+    if (!this.gameStarted || this.gameFinished) return;
 
     const frame = [...this.players[this.currentPlayer].frames[this.currentFrame]];
     
