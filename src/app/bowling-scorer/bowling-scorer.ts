@@ -51,22 +51,11 @@ interface Player {
                   60 min
                 </button>
               </div>
-              <button
-                (click)="toggleTimer()"
-                [disabled]="!gameStarted"
-                class="bg-yellow-500 hover:bg-yellow-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <svg *ngIf="isTimerRunning" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="6" y="4" width="4" height="16"></rect>
-                  <rect x="14" y="4" width="4" height="16"></rect>
-                </svg>
-                <svg *ngIf="!isTimerRunning" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-              </button>
+
               <button
                 (click)="resetGame()"
-                class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition"
+                [disabled]="timeRemaining > 0"
+                class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>
@@ -411,10 +400,6 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   startGame() {
     this.gameStarted = true;
     this.isTimerRunning = true;
-  }
-
-  toggleTimer() {
-    this.isTimerRunning = !this.isTimerRunning;
   }
 
   changeTimeLimit(minutes: number) {
