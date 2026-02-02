@@ -387,10 +387,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   }
 
   resetGame() {
-    this.players = this.players.map(p => ({
-      ...p,
+    this.players = [{
+      name: 'Jugador 1',
       frames: Array.from({ length: 10 }, () => [null, null, null])
-    }));
+    }];
     this.currentPlayer = 0;
     this.currentFrame = 0;
     this.currentRoll = 0;
