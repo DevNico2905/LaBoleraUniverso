@@ -17,7 +17,7 @@ interface Player {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-      <div class="max-w-[95%]">
+      <div class="max-w-[95%] mx-auto">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
