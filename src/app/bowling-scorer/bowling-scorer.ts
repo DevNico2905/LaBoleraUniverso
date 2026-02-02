@@ -164,17 +164,17 @@ interface Player {
             </div>
           </div>
 
-          <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-6 text-white">
-            <div class="text-center mb-3">
-              <h2 class="text-2xl font-bold">
+          <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-4 text-white">
+            <div class="text-center mb-2">
+              <h2 class="text-xl font-bold">
                 {{ players[currentPlayer].name }} - Frame {{ currentFrame + 1 }} - Tiro {{ currentRoll + 1 }}
               </h2>
-              <p class="text-sm mt-1 opacity-90">Usa el teclado (0-9) o haz clic en los botones</p>
+              <p class="text-xs mt-1 opacity-90">Usa el teclado (0-9) o haz clic en los botones</p>
             </div>
-            <div class="grid grid-cols-11 gap-2 max-w-3xl mx-auto">
+            <div class="grid grid-cols-11 gap-2 max-w-2xl mx-auto">
               <button *ngFor="let num of [].constructor(getAvailablePins() + 1); let i = index"
                       (click)="recordPins(i)"
-                      class="bg-white text-gray-900 hover:bg-yellow-400 font-bold py-4 px-1 rounded-lg text-2xl transition transform hover:scale-105 shadow-lg">
+                      class="bg-white text-gray-900 hover:bg-yellow-400 font-bold py-3 px-1 rounded-lg text-lg transition transform hover:scale-105 shadow-lg">
                 {{ i }}
               </button>
             </div>
