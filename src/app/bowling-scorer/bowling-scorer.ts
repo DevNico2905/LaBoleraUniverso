@@ -181,8 +181,66 @@ interface Player {
           </div>
         </div>
       </div>
+
+      <!-- Modal de resultados -->
+      <div *ngIf="gameFinished" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-gradient-to-brown from-yellow-400 via-orange-500 to-red-500 rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform animate-fadeIn">
+          <div class="text-center text-white">
+            <div class="text-7xl mb-6 animate-bounce">🎉🏆🎊</div>
+            <h2 class="text-5xl font-bold mb-6 drop-shadow-lg">¡Juego Terminado!</h2>
+            
+            <div class="bg-white/20 backdrop-blur rounded-2xl p-6 mb-6 border-2 border-white/30">
+              <p class="text-3xl font-semibold mb-3">{{ getWinnerMessage() }}</p>
+              <p class="text-6xl font-bold drop-shadow-lg">{{ getWinnerScore() }} puntos</p>
+            </div>
+
+            <div *ngIf="players.length > 1" class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-6">
+              <h3 class="text-2xl font-semibold mb-4 flex items-center justify-center gap-2">
+                📊 Tabla de Posiciones
+              </h3>
+              <div class="space-y-3 max-h-64 overflow-y-auto">
+                <div *ngFor="let player of getRankedPlayers(); let i = index" 
+                     [class]="i === 0 ? 'bg-yellow-400/30 border-2 border-yellow-300' : 'bg-white/10'"
+                     class="rounded-xl p-4 flex justify-between items-center transition hover:bg-white/20">
+                  <div class="flex items-center gap-4">
+                    <span class="text-3xl font-bold w-12">{{ i + 1 }}°</span>
+                    <span class="text-xl font-semibold">{{ player.name }}</span>
+                  </div>
+                  <span class="text-2xl font-bold">{{ player.score }} pts</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex gap-4 justify-center">
+              <button 
+                (click)="resetGame()"
+                class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                Jugar de Nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
   `,
-  styles: []
+  styles: [`
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+  `]
 })
 export class BowlingScorerComponent implements OnInit, OnDestroy {
   players: Player[] = [{
@@ -455,5 +513,39 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
     
     return roll.toString();
+  }
+
+  getWinnerMessage(): string {
+    const winners = this.getWinners();
+    if (winners.length === 1) {
+      return `🏆 ¡Felicitaciones ${winners[0].name}!`;
+    } else {
+      const names = winners.map(w => w.name).join(' y ');
+      return `🏆 ¡Empate entre ${names}!`;
+    }
+  }
+
+  getWinnerScore(): number {
+    const winners = this.getWinners();
+    return winners.length > 0 ? winners[0].score : 0;
+  }
+
+  getWinners(): { name: string; score: number }[] {
+    const playersWithScores = this.players.map(player => ({
+      name: player.name,
+      score: this.calculateTotalScore(player.frames)
+    }));
+    
+    const maxScore = Math.max(...playersWithScores.map(p => p.score));
+    return playersWithScores.filter(p => p.score === maxScore);
+  }
+
+  getRankedPlayers(): { name: string; score: number }[] {
+    return this.players
+      .map(player => ({
+        name: player.name,
+        score: this.calculateTotalScore(player.frames)
+      }))
+      .sort((a, b) => b.score - a.score);
   }
 }

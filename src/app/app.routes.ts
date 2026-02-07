@@ -3,5 +3,6 @@ import { Home } from './home/home';
 import { BowlingScorerComponent } from './bowling-scorer/bowling-scorer';
 
 export const routes: Routes = [
-    {path: "", component:BowlingScorerComponent }
+    {path: "", component:Home },
+    {path: "game", component:BowlingScorerComponent}
 ];
