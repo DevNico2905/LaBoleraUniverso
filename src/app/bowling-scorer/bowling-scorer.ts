@@ -31,7 +31,7 @@ interface Player {
                     <circle cx="12" cy="12" r="10"></circle>
                     <polyline points="12 6 12 12 16 14"></polyline>
                   </svg>
-                  <span class="text-3xl font-mono font-bold">
+                  <span class="text-3xl font-mono font-bold" [class.text-red-400]="timeRemaining <= 300">
                     {{ formatTime(timeRemaining) }}
                   </span>
                 </div>
@@ -183,6 +183,22 @@ interface Player {
         </div>
       </div>
 
+      <!-- Modal de advertencia de tiempo -->
+      <div *ngIf="showTimeWarning" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-gradient-to-brown from-orange-500 to-red-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+          <div class="text-center text-white">
+            <div class="text-6xl mb-4 animate-pulse">⏰</div>
+            <h2 class="text-3xl font-bold mb-4">¡Atención!</h2>
+            <p class="text-xl mb-6">{{ timeWarningMessage }}</p>
+            <button 
+              (click)="closeTimeWarning()"
+              class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+              Entendido
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Modal de resultados -->
       <div *ngIf="gameFinished" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-gradient-to-brown from-yellow-400 via-orange-500 to-red-500 rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform animate-fadeIn">
@@ -258,6 +274,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
+  showTimeWarning = false;
+  timeWarningMessage = '';
+  private alertedAt15 = false;
+  private alertedAt5 = false;
   
   private timerInterval: any;
 
@@ -283,8 +303,25 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.timerInterval = setInterval(() => {
       if (this.isTimerRunning && this.timeRemaining > 0) {
         this.timeRemaining--;
+        
+        // Alerta a los 15 minutos
+        if (this.timeRemaining === 900 && !this.alertedAt15) {
+          this.alertedAt15 = true;
+          this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
+          this.showTimeWarning = true;
+        }
+        
+        // Alerta a los 5 minutos
+        if (this.timeRemaining === 300 && !this.alertedAt5) {
+          this.alertedAt5 = true;
+          this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
+          this.showTimeWarning = true;
+        }
+        
+        // Tiempo agotado - finalizar juego
         if (this.timeRemaining === 0) {
           this.isTimerRunning = false;
+          this.gameFinished = true;
         }
       }
     }, 1000);
@@ -300,6 +337,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  closeTimeWarning() {
+    this.showTimeWarning = false;
   }
 
   addPlayer() {
@@ -458,6 +499,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.isTimerRunning = false;
     this.gameStarted = false;
     this.gameFinished = false;
+    this.showTimeWarning = false;
+    this.timeWarningMessage = '';
+    this.alertedAt15 = false;
+    this.alertedAt5 = false;
   }
 
   startGame() {
