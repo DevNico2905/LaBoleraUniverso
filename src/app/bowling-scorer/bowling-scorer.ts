@@ -2,6 +2,7 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 
 interface Frame {
   rolls: (number | null)[];
@@ -15,9 +16,9 @@ interface Player {
 @Component({
   selector: 'app-bowling-scorer',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
-      <div class="max-w-[95%] mx-auto">
+      <div class="max-w-[95%] m-auto ">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
@@ -214,6 +215,7 @@ interface Player {
             <div class="flex gap-4 justify-center">
               <button 
                 (click)="resetGame()"
+                routerLink=""
                 class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>

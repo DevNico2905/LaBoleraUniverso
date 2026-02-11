@@ -3,3 +3,17 @@
   font-weight: 400;
   font-style: normal;
 }
+
+
+@keyframes idle {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-18px) scale(1.05);
+  }
+}
+
+.animate-idle {
+  animation: idle 3.2s ease-in-out infinite;
+}

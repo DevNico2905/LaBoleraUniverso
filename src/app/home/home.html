@@ -1,152 +1,16 @@
-<div class="flex flex-col justify-center items-center gap-12 w-full min-h-screen px-4 py-8">
-  
-  <!-- Título con efecto neón -->
-  <h1 class="text-center">
-    <div class="neon-text text-4xl md:text-6xl font-black uppercase tracking-wider mb-2">
-      Bienvenido al
-    </div>
-    <div class="neon-subtitle text-4xl md:text-6xl font-black uppercase tracking-wider">
-      Universo de Diversión
-    </div>
-  </h1>
-  
-  <!-- Logo con efecto flotante -->
-  <div class="relative w-64 h-64 md:w-80 md:h-80 flex justify-center items-center">
-    <div class="absolute inset-0 rounded-full bg-gradient-radial from-purple-500/20 to-transparent animate-logo-pulse"></div>
-    <img 
-      src="/icons/logo.png" 
-      alt="Logo" 
-      class="relative z-10 w-full h-full object-contain animate-float filter drop-shadow-logo"
-    />
-  </div>
-  
-  <!-- Botón de Jugar -->
-  <button
-    routerLink="/game"
-    class="
-      relative px-8 py-4 md:px-12 md:py-6
-      text-xl md:text-2xl font-black uppercase tracking-[0.3em]
-      text-white
-      bg-gradient-to-red from-indigo-500 to-purple-600
-      border-4 border-black
-      rounded-xl
-      shadow-[0_6px_0_#000,0_0_20px_rgba(99,102,241,0.6)]
-      transition-all duration-150
-      hover:translate-y-0.5
-      hover:shadow-[0_4px_0_#000,0_0_30px_rgba(139,92,246,0.8)]
-      active:translate-y-1
-      active:shadow-[0_2px_0_#000,0_0_30px_rgba(139,92,246,0.8)]
-      cursor-pointer
-    "
-  >
-    <span class="inline-block animate-pulse-icon mr-2">▶</span> JUGAR
-  </button>
-  
+<div class="relative w-screen h-screen">
+  <!-- Fondo / imagen principal -->
+  <img
+    src="/icons/logo.png"
+    class="w-full h-full object-cover"
+    alt="Fondo"
+  />
+
+  <!-- Botón Jugar -->
+  <img
+  routerLink="/game"
+  src="/icons/btn-jugar.png"
+  alt="Jugar"
+  class="absolute bottom-110 left-140 -translate-x-1/2 w-62 cursor-pointer animate-idle"/>
+
 </div>
-
-<style>
-  /* Efecto neón para el texto principal */
-  .neon-text {
-    color: #e0e7ff;
-    text-shadow:
-      0 0 5px rgba(224, 231, 255, 0.8),
-      0 0 10px rgba(165, 180, 252, 0.6),
-      0 0 20px rgba(99, 102, 241, 0.5),
-      0 0 30px rgba(99, 102, 241, 0.4);
-    animation: neon-flicker 1.5s infinite alternate;
-  }
-
-  @keyframes neon-flicker {
-    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
-      text-shadow:
-        0 0 5px rgba(224, 231, 255, 0.8),
-        0 0 10px rgba(165, 180, 252, 0.6),
-        0 0 20px rgba(99, 102, 241, 0.5),
-        0 0 30px rgba(99, 102, 241, 0.4);
-    }
-    20%, 24%, 55% {
-      text-shadow:
-        0 0 3px rgba(224, 231, 255, 0.6),
-        0 0 8px rgba(165, 180, 252, 0.4),
-        0 0 15px rgba(99, 102, 241, 0.3),
-        0 0 20px rgba(99, 102, 241, 0.2);
-    }
-  }
-
-  /* Efecto neón para el subtítulo */
-  .neon-subtitle {
-    color: #ddd6fe;
-    text-shadow:
-      0 0 5px rgba(221, 214, 254, 0.8),
-      0 0 10px rgba(196, 181, 253, 0.6),
-      0 0 20px rgba(139, 92, 246, 0.5),
-      0 0 30px rgba(139, 92, 246, 0.4);
-    animation: neon-glow 2s ease-in-out infinite alternate;
-  }
-
-  @keyframes neon-glow {
-    from {
-      text-shadow:
-        0 0 5px rgba(221, 214, 254, 0.8),
-        0 0 10px rgba(196, 181, 253, 0.6),
-        0 0 20px rgba(139, 92, 246, 0.5),
-        0 0 30px rgba(139, 92, 246, 0.4);
-    }
-    to {
-      text-shadow:
-        0 0 8px rgba(221, 214, 254, 0.9),
-        0 0 15px rgba(196, 181, 253, 0.7),
-        0 0 25px rgba(139, 92, 246, 0.6),
-        0 0 35px rgba(139, 92, 246, 0.5);
-    }
-  }
-
-  /* Animación de flotación para el logo */
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-20px);
-    }
-  }
-
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  /* Pulso del resplandor del logo */
-  @keyframes logo-pulse {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 0.5;
-    }
-    50% {
-      transform: scale(1.1);
-      opacity: 0.8;
-    }
-  }
-
-  .animate-logo-pulse {
-    animation: logo-pulse 3s ease-in-out infinite;
-  }
-
-  /* Drop shadow personalizado para el logo */
-  .drop-shadow-logo {
-    filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.5));
-  }
-
-  /* Animación del ícono de play */
-  @keyframes pulse-icon {
-    0%, 100% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.2);
-    }
-  }
-
-  .animate-pulse-icon {
-    animation: pulse-icon 2s ease-in-out infinite;
-  }
-</style>
