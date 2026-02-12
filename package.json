@@ -1,17 +1,61 @@
 {
-  "name": "bolera",
-  "version": "0.0.0",
+  "name": "bowling-scorer",
+  "version": "1.0.0",
+  "description": "Sistema de Puntuación de Bowling",
+  "author": "Nicolás Bernal R.",
   "main": "main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
     "build:electron": "ng build --configuration production --base-href ./",
     "electron": "electron .",
     "electron:dev": "ng build --configuration production --base-href ./ && electron .",
-    "electron:build": "ng build --configuration production --base-href ./ && electron-builder"
+    "pack": "npm run build:electron && electron-builder --dir",
+    "dist": "npm run build:electron && electron-builder",
+    "dist:mac": "npm run build:electron && electron-builder --mac",
+    "dist:win": "npm run build:electron && electron-builder --win",
+    "dist:all": "npm run build:electron && electron-builder -mw"
+  },
+  "build": {
+    "appId": "com.dev-nico.bowling-scorer",
+    "productName": "BowlingScorer",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "src/assets/icons/icon.icns",
+      "category": "public.app-category.sports"
+    },
+    "win": {
+      "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "portable", 
+        "arch": ["x64", "arm64"]
+      }
+    ],
+      "icon": "src/assets/icons/icon.ico"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "src/assets/icons/icon.png"
+    }
   },
   "prettier": {
     "printWidth": 100,
@@ -48,6 +92,7 @@
     "@types/jasmine": "~5.1.0",
     "daisyui": "^4.12.10",
     "electron": "^40.4.0",
+    "electron-builder": "^26.7.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
