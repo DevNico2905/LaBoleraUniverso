@@ -1,12 +1,17 @@
 {
   "name": "bolera",
   "version": "0.0.0",
+  "main": "main.js",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "build:electron": "ng build --configuration production --base-href ./",
+    "electron": "electron .",
+    "electron:dev": "ng build --configuration production --base-href ./ && electron .",
+    "electron:build": "ng build --configuration production --base-href ./ && electron-builder"
   },
   "prettier": {
     "printWidth": 100,
@@ -42,6 +47,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@types/jasmine": "~5.1.0",
     "daisyui": "^4.12.10",
+    "electron": "^40.4.0",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
