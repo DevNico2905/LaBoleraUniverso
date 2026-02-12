@@ -1,4 +1,3 @@
-// bowling-scorer.component.ts
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -22,7 +21,7 @@ interface Player {
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
-              🎳 Sistema de Puntuación
+              🎳 Sistema de Puntuación - Ronda {{ currentRound }}
             </h1>
             <div class="flex items-center gap-4">
               <div class="bg-white/20 rounded-xl px-6 py-3">
@@ -34,6 +33,7 @@ interface Player {
                   <span class="text-3xl font-mono font-bold" [class.text-red-400]="timeRemaining <= 300">
                     {{ formatTime(timeRemaining) }}
                   </span>
+                  <span *ngIf="stopPending" class="text-xs bg-red-500 px-2 py-1 rounded ml-2 animate-pulse">ÚLTIMO FRAME</span>
                 </div>
               </div>
               <div *ngIf="!gameStarted" class="flex gap-2">
@@ -110,9 +110,9 @@ interface Player {
                 <thead class="bg-linear-to-r from-blue-600 to-purple-600 text-white">
                   <tr>
                     <th class="p-4 text-left font-bold">Jugador</th>
-                    <th *ngFor="let frame of [].constructor(10); let i = index" 
+                    <th *ngFor="let _ of [].constructor(10); let i = index" 
                         class="p-4 text-center font-bold border-l border-white/30">
-                      {{ i + 1 }}
+                      {{ ((currentRound - 1) * 10) + i + 1 }}
                     </th>
                     <th class="p-4 text-center font-bold border-l-2 border-white">Total</th>
                   </tr>
@@ -127,32 +127,19 @@ interface Player {
                              [(ngModel)]="player.name"
                              class="border rounded px-2 py-1 w-full" />
                     </td>
-                    <td *ngFor="let frame of player.frames; let fIndex = index" 
+                    <td *ngFor="let frame of getVisibleFrames(player); let i = index" 
                         class="p-2 border-l border-gray-200">
                       <div class="flex flex-col items-center">
                         <div class="flex gap-1 mb-1">
-                          <ng-container *ngIf="fIndex < 9">
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
-                              {{ displayRoll(frame[0], fIndex, 0, player.frames) }}
+                          <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                              {{ displayRoll(frame[0], frame[0]) }}
                             </div>
                             <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
-                              {{ displayRoll(frame[1], fIndex, 1, player.frames) }}
+                              {{ displayRoll(frame[1], frame[0]) }}
                             </div>
-                          </ng-container>
-                          <ng-container *ngIf="fIndex === 9">
-                            <div class="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-xs font-bold">
-                              {{ displayRoll(frame[0], fIndex, 0, player.frames) }}
-                            </div>
-                            <div class="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-xs font-bold">
-                              {{ displayRoll(frame[1], fIndex, 1, player.frames) }}
-                            </div>
-                            <div class="w-7 h-7 border border-gray-300 rounded flex items-center justify-center text-xs font-bold">
-                              {{ displayRoll(frame[2], fIndex, 2, player.frames) }}
-                            </div>
-                          </ng-container>
                         </div>
                         <div class="text-xs font-semibold text-blue-600">
-                          {{ getFrameScores(player.frames)[fIndex] !== null ? getFrameScores(player.frames)[fIndex] : '' }}
+                           {{ getFrameScoreForDisplay(player, ((currentRound - 1) * 10) + i) }}
                         </div>
                       </div>
                     </td>
@@ -183,7 +170,6 @@ interface Player {
         </div>
       </div>
 
-      <!-- Modal de advertencia de tiempo -->
       <div *ngIf="showTimeWarning" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-gradient-to-brown from-orange-500 to-red-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
@@ -191,7 +177,6 @@ interface Player {
             <h2 class="text-3xl font-bold mb-4">¡Atención!</h2>
             <p class="text-xl mb-6">{{ timeWarningMessage }}</p>
             
-            <!-- Botones para alerta de 15 minutos (solo continuar) -->
             <div *ngIf="timeRemaining > 300" class="flex justify-center">
               <button 
                 (click)="closeTimeWarning()"
@@ -200,7 +185,6 @@ interface Player {
               </button>
             </div>
             
-            <!-- Botones para alerta de 5 minutos (continuar o agregar tiempo) -->
             <div *ngIf="timeRemaining <= 300" class="flex gap-4 justify-center">
               <button 
                 (click)="closeTimeWarning()"
@@ -221,7 +205,6 @@ interface Player {
         </div>
       </div>
 
-      <!-- Modal de contraseña -->
       <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
         <div class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
@@ -258,16 +241,16 @@ interface Player {
         </div>
       </div>
 
-      <!-- Modal de resultados -->
       <div *ngIf="gameFinished" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-gradient-to-brown from-yellow-400 via-orange-500 to-red-500 rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-7xl mb-6 animate-bounce">🎉🏆🎊</div>
-            <h2 class="text-5xl font-bold mb-6 drop-shadow-lg">¡Juego Terminado!</h2>
+            <h2 class="text-5xl font-bold mb-6 drop-shadow-lg">¡Tiempo Terminado!</h2>
             
             <div class="bg-white/20 backdrop-blur rounded-2xl p-6 mb-6 border-2 border-white/30">
               <p class="text-3xl font-semibold mb-3">{{ getWinnerMessage() }}</p>
               <p class="text-6xl font-bold drop-shadow-lg">{{ getWinnerScore() }} puntos</p>
+              <p class="text-xl mt-4 opacity-90">Frames jugados: {{ currentFrame }}</p>
             </div>
 
             <div *ngIf="players.length > 1" class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-6">
@@ -296,7 +279,7 @@ interface Player {
                   <polyline points="1 4 1 10 7 10"></polyline>
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
                 </svg>
-                Jugar de Nuevo
+                Nueva Partida
               </button>
             </div>
           </div>
@@ -320,19 +303,24 @@ interface Player {
   `]
 })
 export class BowlingScorerComponent implements OnInit, OnDestroy {
+  // Inicializamos con 10 frames, pero esto crecerá dinámicamente
   players: Player[] = [{
     name: 'Jugador 1',
-    frames: Array.from({ length: 10 }, () => [null, null, null])
+    frames: Array.from({ length: 10 }, () => [null, null]) // Ahora solo 2 espacios por defecto (frames continuos)
   }];
   
   currentPlayer = 0;
   currentFrame = 0;
   currentRoll = 0;
-  timeLimit = 6;
-  timeRemaining = 6 * 60;
+  currentRound = 1; // Para la paginación visual (1 = frames 1-10, 2 = frames 11-20)
+  
+  timeLimit = 30;
+  timeRemaining = 30 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
+  stopPending = false; // Nueva bandera: tiempo agotado, esperando terminar el frame
+  
   showTimeWarning = false;
   timeWarningMessage = '';
   showPasswordPrompt = false;
@@ -368,24 +356,23 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       if (this.isTimerRunning && this.timeRemaining > 0) {
         this.timeRemaining--;
         
-        // Alerta a los 15 minutos
+        // Alertas de tiempo (sin cambios)
         if (this.timeRemaining === 900 && !this.alertedAt15) {
           this.alertedAt15 = true;
           this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
           this.showTimeWarning = true;
         }
         
-        // Alerta a los 5 minutos
         if (this.timeRemaining === 300 && !this.alertedAt5) {
           this.alertedAt5 = true;
           this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
           this.showTimeWarning = true;
         }
         
-        // Tiempo agotado - finalizar juego
+        // Cuando el tiempo llega a 0, NO paramos inmediatamente.
+        // Activamos la bandera para terminar al final del frame actual.
         if (this.timeRemaining === 0) {
-          this.isTimerRunning = false;
-          this.gameFinished = true;
+          this.stopPending = true;
         }
       }
     }, 1000);
@@ -403,40 +390,21 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   }
 
-  closeTimeWarning() {
-    this.showTimeWarning = false;
-  }
-
-  openPasswordPrompt() {
-    this.showPasswordPrompt = true;
-    this.passwordInput = '';
-    this.passwordError = false;
-  }
-
-  cancelPasswordPrompt() {
-    this.showPasswordPrompt = false;
-    this.passwordInput = '';
-    this.passwordError = false;
-  }
-
+  // Métodos de Modales (sin cambios mayores)
+  closeTimeWarning() { this.showTimeWarning = false; }
+  openPasswordPrompt() { this.showPasswordPrompt = true; this.passwordInput = ''; this.passwordError = false; }
+  cancelPasswordPrompt() { this.showPasswordPrompt = false; }
+  
   validatePassword() {
     if (this.passwordInput === this.correctPassword) {
-      // Agregar 30 minutos
       this.timeRemaining += 30 * 60;
       this.timeLimit += 30;
-      
-      // Resetear alertas para que vuelvan a activarse
       this.alertedAt15 = false;
       this.alertedAt5 = false;
-      
-      // Marcar que ya se agregó tiempo extra
       this.extraTimeAdded = true;
-      
-      // Cerrar modales
+      this.stopPending = false; // Si agregaron tiempo, cancelamos el paro pendiente
       this.showPasswordPrompt = false;
       this.showTimeWarning = false;
-      this.passwordInput = '';
-      this.passwordError = false;
     } else {
       this.passwordError = true;
     }
@@ -446,7 +414,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.players.length < 9 && !this.gameStarted) {
       this.players.push({
         name: `Jugador ${this.players.length + 1}`,
-        frames: Array.from({ length: 10 }, () => [null, null, null])
+        frames: Array.from({ length: 10 }, () => [null, null])
       });
     }
   }
@@ -457,147 +425,174 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // --- LÓGICA DE PUNTUACIÓN MODIFICADA PARA JUEGO CONTINUO ---
+
+  // Obtener solo los 10 frames de la ronda actual para mostrar en pantalla
+  getVisibleFrames(player: Player): (number | null)[][] {
+    const startIndex = (this.currentRound - 1) * 10;
+    const endIndex = startIndex + 10;
+    return player.frames.slice(startIndex, endIndex);
+  }
+
   calculateFrameScore(playerFrames: (number | null)[][], frameIndex: number): number | null {
     const frame = playerFrames[frameIndex];
-    const [roll1, roll2, roll3] = frame;
+    if (!frame) return null;
+
+    const [roll1, roll2] = frame;
     
     if (roll1 === null) return null;
     
-    if (frameIndex === 9) {
-      let score = roll1;
-      if (roll2 !== null) score += roll2;
-      if (roll3 !== null) score += roll3;
-      return score;
-    }
-    
+    // Lógica de Strike (10 puntos + siguientes 2 tiros)
     if (roll1 === 10) {
+      // Mirar el siguiente frame
       const nextFrame = playerFrames[frameIndex + 1];
-      if (nextFrame[0] === null) return null;
+      if (!nextFrame || nextFrame[0] === null) return null; // Esperando siguiente tiro
       
       let score = 10 + nextFrame[0];
       
       if (nextFrame[0] === 10) {
-        if (frameIndex + 1 === 9) {
-          if (nextFrame[1] === null) return null;
-          score += nextFrame[1];
-        } else {
-          const nextNextFrame = playerFrames[frameIndex + 2];
-          if (nextNextFrame[0] === null) return null;
-          score += nextNextFrame[0];
-        }
+        // Si el siguiente fue strike, necesitamos mirar el subsiguiente
+        const nextNextFrame = playerFrames[frameIndex + 2];
+        if (!nextNextFrame || nextNextFrame[0] === null) return null;
+        score += nextNextFrame[0];
       } else {
+        // Si no fue strike, sumar el segundo tiro del siguiente frame
         if (nextFrame[1] === null) return null;
         score += nextFrame[1];
       }
-      
       return score;
     }
     
+    // Lógica de Spare (10 puntos + siguiente 1 tiro)
     if (roll2 === null) return null;
     
     if (roll1 + roll2 === 10) {
       const nextFrame = playerFrames[frameIndex + 1];
-      if (nextFrame[0] === null) return null;
+      if (!nextFrame || nextFrame[0] === null) return null;
       return 10 + nextFrame[0];
     }
     
+    // Frame abierto
     return roll1 + roll2;
   }
 
   calculateTotalScore(playerFrames: (number | null)[][]): number {
     let total = 0;
-    for (let i = 0; i < 10; i++) {
+    // Calculamos puntuación de TODOS los frames, no solo los visibles
+    for (let i = 0; i < playerFrames.length; i++) {
       const frameScore = this.calculateFrameScore(playerFrames, i);
-      if (frameScore === null) break;
-      total += frameScore;
+      if (frameScore !== null) {
+        total += frameScore;
+      }
     }
     return total;
   }
 
-  getFrameScores(playerFrames: (number | null)[][]): (number | null)[] {
+  getFrameScoreForDisplay(player: Player, globalIndex: number): number | null {
     const scores: (number | null)[] = [];
     let cumulative = 0;
     
-    for (let i = 0; i < 10; i++) {
-      const frameScore = this.calculateFrameScore(playerFrames, i);
+    // Recalcular hasta el índice deseado para obtener el acumulado correcto
+    for (let i = 0; i <= globalIndex; i++) {
+      const frameScore = this.calculateFrameScore(player.frames, i);
       if (frameScore === null) {
-        scores.push(null);
+        return null; // Si un frame anterior está incompleto, no mostramos totales futuros (o mostramos parciales según preferencia)
       } else {
         cumulative += frameScore;
-        scores.push(cumulative);
       }
     }
     
-    return scores;
+    // Verificamos si el frame actual ya tiene score calculado
+    if (this.calculateFrameScore(player.frames, globalIndex) === null) return null;
+
+    return cumulative;
   }
 
   recordPins(pins: number) {
     if (!this.gameStarted || this.gameFinished) return;
 
+    // Asegurar que el frame existe
+    if (!this.players[this.currentPlayer].frames[this.currentFrame]) {
+       // Esto no debería pasar con la lógica de expansión, pero por seguridad:
+       return; 
+    }
+
     const frame = [...this.players[this.currentPlayer].frames[this.currentFrame]];
     
-    if (this.currentFrame < 9) {
-      if (this.currentRoll === 0) {
-        frame[0] = pins;
-        this.players[this.currentPlayer].frames[this.currentFrame] = frame;
-        if (pins === 10) {
-          this.moveToNextTurn();
-        } else {
-          this.currentRoll = 1;
-        }
-      } else {
-        frame[1] = pins;
-        this.players[this.currentPlayer].frames[this.currentFrame] = frame;
-        this.moveToNextTurn();
-      }
-    } else {
-      frame[this.currentRoll] = pins;
+    if (this.currentRoll === 0) {
+      frame[0] = pins;
       this.players[this.currentPlayer].frames[this.currentFrame] = frame;
       
-      if (this.currentRoll === 0) {
-        this.currentRoll = 1;
-      } else if (this.currentRoll === 1) {
-        const roll1 = frame[0];
-        if (roll1 === 10 || (roll1 !== null && roll1 + pins === 10)) {
-          this.currentRoll = 2;
-        } else {
-          this.moveToNextTurn();
-        }
-      } else {
+      if (pins === 10) {
+        // Strike! Pasar turno.
+        // En modo continuo, no hay segundo tiro en strike.
         this.moveToNextTurn();
+      } else {
+        this.currentRoll = 1;
       }
+    } else {
+      frame[1] = pins;
+      this.players[this.currentPlayer].frames[this.currentFrame] = frame;
+      this.moveToNextTurn();
     }
   }
 
   moveToNextTurn() {
+    // 1. Cambiar Jugador
     if (this.currentPlayer < this.players.length - 1) {
       this.currentPlayer++;
       this.currentRoll = 0;
-    } else if (this.currentFrame < 9) {
+    } 
+    // 2. Si todos jugaron este frame, avanzar al siguiente frame
+    else {
+      // Verificar si el tiempo se acabó y estamos al final de la ronda de jugadores
+      if (this.stopPending) {
+        this.finishGame();
+        return;
+      }
+
       this.currentPlayer = 0;
       this.currentFrame++;
       this.currentRoll = 0;
-    } else {
-      this.currentPlayer = 0;
-      this.currentFrame = 0;
-      this.currentRoll = 0;
-      this.isTimerRunning = false;
-      this.gameFinished = true;
+
+      // 3. Verificar si necesitamos una nueva página visual (Ronda)
+      // Si el currentFrame (índice 0-based) es múltiplo de 10 (ej: 10, 20), cambiamos de ronda
+      if (this.currentFrame % 10 === 0) {
+        this.currentRound++;
+        // Expandir arrays de frames para todos los jugadores
+        this.expandFrames();
+      }
     }
+  }
+
+  expandFrames() {
+    // Agregamos 10 frames vacíos más a cada jugador
+    this.players.forEach(player => {
+      const newFrames = Array.from({ length: 10 }, () => [null, null]);
+      player.frames = [...player.frames, ...newFrames];
+    });
+  }
+
+  finishGame() {
+    this.isTimerRunning = false;
+    this.gameFinished = true;
+    this.stopTimer();
   }
 
   resetGame() {
     this.players = [{
       name: 'Jugador 1',
-      frames: Array.from({ length: 10 }, () => [null, null, null])
+      frames: Array.from({ length: 10 }, () => [null, null])
     }];
     this.currentPlayer = 0;
     this.currentFrame = 0;
     this.currentRoll = 0;
+    this.currentRound = 1;
     this.timeRemaining = this.timeLimit * 60;
     this.isTimerRunning = false;
     this.gameStarted = false;
     this.gameFinished = false;
+    this.stopPending = false;
     this.showTimeWarning = false;
     this.timeWarningMessage = '';
     this.alertedAt15 = false;
@@ -622,48 +617,29 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   getAvailablePins(): number {
     const frame = this.players[this.currentPlayer].frames[this.currentFrame];
-    if (this.currentFrame < 9) {
-      if (this.currentRoll === 0) return 10;
-      return 10 - (frame[0] || 0);
-    } else {
-      if (this.currentRoll === 0) return 10;
-      if (this.currentRoll === 1) {
-        if (frame[0] === 10) return 10;
-        return 10 - (frame[0] || 0);
-      }
-      if (frame[1] === 10) return 10;
-      if (frame[0] === 10) {
-        return 10 - (frame[1] || 0);
-      }
-      return 10;
-    }
+    // Modo continuo: siempre 10, a menos que sea el segundo tiro
+    if (this.currentRoll === 0) return 10;
+    return 10 - (frame[0] || 0);
   }
 
-  displayRoll(roll: number | null, frameIndex: number, rollIndex: number, playerFrames: (number | null)[][]): string {
+  displayRoll(roll: number | null, firstRoll: number | null): string {
     if (roll === null) return '';
-    if (roll === 10) return 'X';
     
-    const frame = playerFrames[frameIndex];
+    // Si es el primer tiro y es 10 -> X
+    if (roll === 10 && (firstRoll === 10 || firstRoll === null)) return 'X'; 
     
-    if (frameIndex < 9) {
-      if (rollIndex === 1 && frame[0] !== null && frame[0] + roll === 10) return '/';
-    } else {
-      if (rollIndex === 1) {
-        if (frame[0] !== 10 && frame[0] !== null && frame[0] + roll === 10) return '/';
-      }
-      if (rollIndex === 2) {
-        if (frame[1] === 10) {
-          if (roll === 10) return 'X';
-        } else if (frame[0] === 10) {
-          if (frame[1] !== null && frame[1] + roll === 10) return '/';
-        } else if (frame[0] !== null && frame[1] !== null && frame[0] + frame[1] === 10) {
-          if (roll === 10) return 'X';
-        }
-      }
+    // Si es el segundo tiro y suma 10 con el primero -> /
+    // Nota: firstRoll aquí se pasa como argumento para verificar el contexto
+    if (this.currentRoll === 1 || (firstRoll !== null && firstRoll !== 10 && firstRoll + roll === 10)) {
+        // En la vista, llamamos displayRoll(frame[1], frame[0])
+        // Si la suma es 10, es spare
+        if (firstRoll !== null && firstRoll + roll === 10) return '/';
     }
-    
+
     return roll.toString();
   }
+
+  // --- LÓGICA DE GANADORES (Sin cambios mayores) ---
 
   getWinnerMessage(): string {
     const winners = this.getWinners();
