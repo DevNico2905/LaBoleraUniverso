@@ -5,7 +5,8 @@
 /tmp
 /out-tsc
 /bazel-out
-
+/out
+/release
 # Node
 /node_modules
 npm-debug.log
@@ -41,3 +42,11 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+
+dist/
+out/
+release/
+*.exe
+*.dmg
+*.AppImage

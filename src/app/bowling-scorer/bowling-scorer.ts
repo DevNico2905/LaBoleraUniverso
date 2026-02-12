@@ -190,11 +190,70 @@ interface Player {
             <div class="text-6xl mb-4 animate-pulse">⏰</div>
             <h2 class="text-3xl font-bold mb-4">¡Atención!</h2>
             <p class="text-xl mb-6">{{ timeWarningMessage }}</p>
-            <button 
-              (click)="closeTimeWarning()"
-              class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
-              Entendido
-            </button>
+            
+            <!-- Botones para alerta de 15 minutos (solo continuar) -->
+            <div *ngIf="timeRemaining > 300" class="flex justify-center">
+              <button 
+                (click)="closeTimeWarning()"
+                class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                Entendido
+              </button>
+            </div>
+            
+            <!-- Botones para alerta de 5 minutos (continuar o agregar tiempo) -->
+            <div *ngIf="timeRemaining <= 300" class="flex gap-4 justify-center">
+              <button 
+                (click)="closeTimeWarning()"
+                class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                Continuar
+              </button>
+              <button 
+                *ngIf="!extraTimeAdded"
+                (click)="openPasswordPrompt()"
+                class="bg-green-500 text-white hover:bg-green-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
+                </svg>
+                +30 min
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de contraseña -->
+      <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+        <div class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+          <div class="text-center text-white">
+            <div class="text-6xl mb-4">🔐</div>
+            <h2 class="text-3xl font-bold mb-4">Contraseña del Administrador</h2>
+            <p class="text-lg mb-6">Ingrese la contraseña para agregar 30 minutos</p>
+            
+            <input 
+              type="password"
+              [(ngModel)]="passwordInput"
+              (keyup.enter)="validatePassword()"
+              placeholder="Contraseña"
+              class="w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold mb-2 border-2 border-white/40 focus:outline-none focus:ring-4 focus:ring-white/40 placeholder:text-white/80"
+              autofocus
+            />
+            
+            <p *ngIf="passwordError" class="text-red-200 bg-red-500/30 rounded-lg px-4 py-2 mb-4 font-semibold">
+              ❌ Contraseña incorrecta
+            </p>
+            
+            <div class="flex gap-4 justify-center mt-6">
+              <button 
+                (click)="cancelPasswordPrompt()"
+                class="bg-white/20 text-white hover:bg-white/30 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
+                Cancelar
+              </button>
+              <button 
+                (click)="validatePassword()"
+                class="bg-white text-purple-600 hover:bg-purple-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -269,13 +328,18 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentPlayer = 0;
   currentFrame = 0;
   currentRoll = 0;
-  timeLimit = 30;
-  timeRemaining = 30 * 60;
+  timeLimit = 6;
+  timeRemaining = 6 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
   showTimeWarning = false;
   timeWarningMessage = '';
+  showPasswordPrompt = false;
+  passwordInput = '';
+  correctPassword = 'admin123';
+  passwordError = false;
+  extraTimeAdded = false;
   private alertedAt15 = false;
   private alertedAt5 = false;
   
@@ -341,6 +405,41 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   closeTimeWarning() {
     this.showTimeWarning = false;
+  }
+
+  openPasswordPrompt() {
+    this.showPasswordPrompt = true;
+    this.passwordInput = '';
+    this.passwordError = false;
+  }
+
+  cancelPasswordPrompt() {
+    this.showPasswordPrompt = false;
+    this.passwordInput = '';
+    this.passwordError = false;
+  }
+
+  validatePassword() {
+    if (this.passwordInput === this.correctPassword) {
+      // Agregar 30 minutos
+      this.timeRemaining += 30 * 60;
+      this.timeLimit += 30;
+      
+      // Resetear alertas para que vuelvan a activarse
+      this.alertedAt15 = false;
+      this.alertedAt5 = false;
+      
+      // Marcar que ya se agregó tiempo extra
+      this.extraTimeAdded = true;
+      
+      // Cerrar modales
+      this.showPasswordPrompt = false;
+      this.showTimeWarning = false;
+      this.passwordInput = '';
+      this.passwordError = false;
+    } else {
+      this.passwordError = true;
+    }
   }
 
   addPlayer() {
@@ -503,6 +602,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.timeWarningMessage = '';
     this.alertedAt15 = false;
     this.alertedAt5 = false;
+    this.showPasswordPrompt = false;
+    this.passwordInput = '';
+    this.passwordError = false;
+    this.extraTimeAdded = false;
   }
 
   startGame() {
