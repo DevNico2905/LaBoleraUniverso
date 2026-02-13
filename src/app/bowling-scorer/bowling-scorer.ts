@@ -54,9 +54,36 @@ interface Player {
               </div>
 
               <button
+                *ngIf="!gameStarted"
                 (click)="resetGame()"
                 [disabled]="!gameFinished && timeRemaining > 0"
                 class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                title="Reiniciar juego"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+              </button>
+              <button
+                *ngIf="gameStarted && !gameFinished"
+                (click)="editMode = !editMode"
+                [class]="editMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'"
+                class="text-white p-3 rounded-lg transition"
+                [title]="editMode ? 'Guardar cambios' : 'Editar nombres'"
+              >
+                <svg *ngIf="!editMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                <svg *ngIf="editMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M5 13l4 4L19 7"></path>
+                </svg>
+              </button>
+              <button
+                *ngIf="gameFinished"
+                (click)="resetGame()"
+                class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition"
+                title="Reiniciar juego"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>
@@ -121,8 +148,8 @@ interface Player {
                   <tr *ngFor="let player of players; let pIndex = index"
                       [class]="pIndex === currentPlayer ? 'bg-yellow-100 border-b border-gray-200' : 'border-b border-gray-200 hover:bg-gray-50'">
                     <td class="p-4 font-semibold">
-                      <span *ngIf="gameStarted">{{ player.name }}</span>
-                      <input *ngIf="!gameStarted"
+                      <span *ngIf="gameStarted && !editMode">{{ player.name }}</span>
+                      <input *ngIf="!gameStarted || editMode"
                              type="text"
                              [(ngModel)]="player.name"
                              class="border rounded px-2 py-1 w-full" />
@@ -314,8 +341,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentRoll = 0;
   currentRound = 1; // Para la paginación visual (1 = frames 1-10, 2 = frames 11-20)
   
-  timeLimit = 16;
-  timeRemaining = 16 * 60;
+  timeLimit = 6;
+  timeRemaining = 6 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
@@ -328,6 +355,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   correctPassword = 'admin123';
   passwordError = false;
   extraTimeAdded = false;
+  
+  editMode = false; // Modo de edición de nombres durante el juego
   private alertedAt15 = false;
   private alertedAt5 = false;
   
@@ -343,7 +372,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyPress(event: KeyboardEvent) {
-    if (!this.gameStarted || this.gameFinished) return;
+    if (!this.gameStarted || this.gameFinished || this.editMode) return;
     
     const num = parseInt(event.key);
     if (!isNaN(num) && num >= 0 && num <= this.getAvailablePins()) {
@@ -615,6 +644,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.passwordInput = '';
     this.passwordError = false;
     this.extraTimeAdded = false;
+    this.editMode = false; // Resetear modo de edición
   }
 
   startGame() {
@@ -648,8 +678,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // Spare (completa 10 con el primer tiro)
     if (!isFirstRoll && firstRoll !== null && firstRoll + roll === 10) return '/';
     
-    // Número normal
-    return roll.toString();
+    // Número normal (mostrar "-" cuando es 0)
+    return roll === 0 ? '-' : roll.toString();
   }
 
   // --- LÓGICA DE GANADORES (Sin cambios mayores) ---
