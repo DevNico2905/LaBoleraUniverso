@@ -314,8 +314,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentRoll = 0;
   currentRound = 1; // Para la paginación visual (1 = frames 1-10, 2 = frames 11-20)
   
-  timeLimit = 6;
-  timeRemaining = 6 * 60;
+  timeLimit = 16;
+  timeRemaining = 16 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
@@ -511,6 +511,12 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   recordPins(pins: number) {
     if (!this.gameStarted || this.gameFinished) return;
 
+    // VALIDACIÓN 1: Pinos deben estar entre 0 y 10
+    if (pins < 0 || pins > 10) {
+      console.error('Error: Los pinos deben estar entre 0 y 10');
+      return;
+    }
+
     // Asegurar que el frame existe
     if (!this.players[this.currentPlayer].frames[this.currentFrame]) {
        // Esto no debería pasar con la lógica de expansión, pero por seguridad:
@@ -518,6 +524,14 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
 
     const frame = [...this.players[this.currentPlayer].frames[this.currentFrame]];
+    
+    // VALIDACIÓN 2: En segundo tiro, suma no puede exceder 10 (excepto si primer tiro fue strike)
+    if (this.currentRoll === 1 && frame[0] !== null && frame[0] !== 10) {
+      if (frame[0] + pins > 10) {
+        console.error(`Error: No puedes derribar ${pins} pinos. Solo quedan ${10 - frame[0]} pinos disponibles.`);
+        return;
+      }
+    }
     
     if (this.currentRoll === 0) {
       frame[0] = pins;
@@ -625,17 +639,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   displayRoll(roll: number | null, firstRoll: number | null): string {
     if (roll === null) return '';
     
-    // Si es el primer tiro y es 10 -> X
-    if (roll === 10 && (firstRoll === 10 || firstRoll === null)) return 'X'; 
+    // Determinar si es segundo tiro basado en el contexto de firstRoll
+    const isFirstRoll = (firstRoll === null || firstRoll === 10);
     
-    // Si es el segundo tiro y suma 10 con el primero -> /
-    // Nota: firstRoll aquí se pasa como argumento para verificar el contexto
-    if (this.currentRoll === 1 || (firstRoll !== null && firstRoll !== 10 && firstRoll + roll === 10)) {
-        // En la vista, llamamos displayRoll(frame[1], frame[0])
-        // Si la suma es 10, es spare
-        if (firstRoll !== null && firstRoll + roll === 10) return '/';
-    }
-
+    // Strike (10 pinos en primer tiro)
+    if (roll === 10 && isFirstRoll) return 'X';
+    
+    // Spare (completa 10 con el primer tiro)
+    if (!isFirstRoll && firstRoll !== null && firstRoll + roll === 10) return '/';
+    
+    // Número normal
     return roll.toString();
   }
 
