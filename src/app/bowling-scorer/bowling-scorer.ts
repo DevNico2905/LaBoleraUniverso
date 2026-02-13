@@ -132,7 +132,7 @@ interface Player {
                       <div class="flex flex-col items-center">
                         <div class="flex gap-1 mb-1">
                           <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
-                              {{ displayRoll(frame[0], frame[0]) }}
+                              {{ displayRoll(frame[0], null) }}
                             </div>
                             <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
                               {{ displayRoll(frame[1], frame[0]) }}
@@ -314,8 +314,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentRoll = 0;
   currentRound = 1; // Para la paginación visual (1 = frames 1-10, 2 = frames 11-20)
   
-  timeLimit = 30;
-  timeRemaining = 30 * 60;
+  timeLimit = 6;
+  timeRemaining = 6 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
