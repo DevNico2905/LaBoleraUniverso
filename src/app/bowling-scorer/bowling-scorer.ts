@@ -151,7 +151,7 @@ interface CompletedGame {
                       {{ i + 1 }}
                     </th>
                     <th class="p-4 text-center font-bold border-l-2 border-white">Juego Actual</th>
-                    <th class="p-4 text-center font-bold border-l border-white/30 bg-green-700">Total Acumulado</th>
+                    <th *ngIf="hasCompletedGames" class="p-4 text-center font-bold border-l border-white/30 bg-green-700">Total Acumulado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,7 +198,7 @@ interface CompletedGame {
                     <td class="p-4 text-center font-bold text-lg border-l-2 border-gray-300 bg-blue-50">
                       {{ calculateTotalScore(player.frames) }}
                     </td>
-                    <td class="p-4 text-center font-bold text-lg border-l border-gray-300 bg-green-100">
+                    <td *ngIf="hasCompletedGames" class="p-4 text-center font-bold text-lg border-l border-gray-300 bg-green-100">
                       {{ getAccumulatedScore(player) }}
                     </td>
                   </tr>
@@ -386,6 +386,11 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   extraTimeAdded = false;
   
   editMode = false;
+  
+  get hasCompletedGames(): boolean {
+    return this.players.length > 0 && this.players[0].completedGames.length > 0;
+  }
+  
   private alertedAt15 = false;
   private alertedAt5 = false;
   
