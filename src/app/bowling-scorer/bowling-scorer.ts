@@ -9,7 +9,16 @@ interface Frame {
 
 interface Player {
   name: string;
-  frames: (number | null)[][];
+  frames: (number | null)[][]; // Siempre 10 frames, el último con 3 casillas
+  completedGames: number[]; // Historial de juegos completados
+  currentGameNumber: number; // Número de partida actual (1, 2, 3...)
+}
+
+interface CompletedGame {
+  gameNumber: number;
+  playerName: string;
+  score: number;
+  timestamp: number;
 }
 
 @Component({
@@ -21,7 +30,7 @@ interface Player {
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
-              🎳 Sistema de Puntuación - Ronda {{ currentRound }}
+              🎳 Sistema de Puntuación - Juego #{{ getCurrentGameNumber() }}
             </h1>
             <div class="flex items-center gap-4">
               <div class="bg-white/20 rounded-xl px-6 py-3">
@@ -139,9 +148,10 @@ interface Player {
                     <th class="p-4 text-left font-bold">Jugador</th>
                     <th *ngFor="let _ of [].constructor(10); let i = index" 
                         class="p-4 text-center font-bold border-l border-white/30">
-                      {{ ((currentRound - 1) * 10) + i + 1 }}
+                      {{ i + 1 }}
                     </th>
-                    <th class="p-4 text-center font-bold border-l-2 border-white">Total</th>
+                    <th class="p-4 text-center font-bold border-l-2 border-white">Juego Actual</th>
+                    <th class="p-4 text-center font-bold border-l border-white/30 bg-green-700">Total Acumulado</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -154,24 +164,42 @@ interface Player {
                              [(ngModel)]="player.name"
                              class="border rounded px-2 py-1 w-full" />
                     </td>
-                    <td *ngFor="let frame of getVisibleFrames(player); let i = index" 
+                    <td *ngFor="let frame of player.frames; let i = index" 
                         class="p-2 border-l border-gray-200">
                       <div class="flex flex-col items-center">
                         <div class="flex gap-1 mb-1">
-                          <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
-                              {{ displayRoll(frame[0], null) }}
+                          <!-- Frame 10 tiene 3 casillas -->
+                          <ng-container *ngIf="i === 9">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                              {{ displayRoll(frame[0], null, true) }}
                             </div>
                             <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
-                              {{ displayRoll(frame[1], frame[0]) }}
+                              {{ displayRoll(frame[1], frame[0], true) }}
                             </div>
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                              {{ displayRoll(frame[2], frame[1], true) }}
+                            </div>
+                          </ng-container>
+                          <!-- Frames 1-9 tienen 2 casillas -->
+                          <ng-container *ngIf="i !== 9">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                              {{ displayRoll(frame[0], null, false) }}
+                            </div>
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                              {{ displayRoll(frame[1], frame[0], false) }}
+                            </div>
+                          </ng-container>
                         </div>
                         <div class="text-xs font-semibold text-blue-600">
-                           {{ getFrameScoreForDisplay(player, ((currentRound - 1) * 10) + i) }}
+                           {{ getFrameScoreForDisplay(player, i) }}
                         </div>
                       </div>
                     </td>
                     <td class="p-4 text-center font-bold text-lg border-l-2 border-gray-300 bg-blue-50">
                       {{ calculateTotalScore(player.frames) }}
+                    </td>
+                    <td class="p-4 text-center font-bold text-lg border-l border-gray-300 bg-green-100">
+                      {{ getAccumulatedScore(player) }}
                     </td>
                   </tr>
                 </tbody>
@@ -330,23 +358,24 @@ interface Player {
   `]
 })
 export class BowlingScorerComponent implements OnInit, OnDestroy {
-  // Inicializamos con 10 frames, pero esto crecerá dinámicamente
+  // Inicializamos con 10 frames (el último con 3 espacios)
   players: Player[] = [{
     name: 'Jugador 1',
-    frames: Array.from({ length: 10 }, () => [null, null]) // Ahora solo 2 espacios por defecto (frames continuos)
+    frames: this.createInitialFrames(),
+    completedGames: [],
+    currentGameNumber: 1
   }];
   
   currentPlayer = 0;
   currentFrame = 0;
   currentRoll = 0;
-  currentRound = 1; // Para la paginación visual (1 = frames 1-10, 2 = frames 11-20)
   
   timeLimit = 6;
   timeRemaining = 6 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
-  stopPending = false; // Nueva bandera: tiempo agotado, esperando terminar el frame
+  stopPending = false;
   
   showTimeWarning = false;
   timeWarningMessage = '';
@@ -356,7 +385,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   passwordError = false;
   extraTimeAdded = false;
   
-  editMode = false; // Modo de edición de nombres durante el juego
+  editMode = false;
   private alertedAt15 = false;
   private alertedAt5 = false;
   
@@ -368,6 +397,18 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopTimer();
+  }
+
+  // Crea 10 frames: 9 con 2 casillas y el último con 3
+  private createInitialFrames(): (number | null)[][] {
+    const frames: (number | null)[][] = [];
+    // Frames 1-9: 2 casillas
+    for (let i = 0; i < 9; i++) {
+      frames.push([null, null]);
+    }
+    // Frame 10: 3 casillas
+    frames.push([null, null, null]);
+    return frames;
   }
 
   @HostListener('window:keydown', ['$event'])
@@ -443,7 +484,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.players.length < 9 && !this.gameStarted) {
       this.players.push({
         name: `Jugador ${this.players.length + 1}`,
-        frames: Array.from({ length: 10 }, () => [null, null])
+        frames: this.createInitialFrames(),
+        completedGames: [],
+        currentGameNumber: 1
       });
     }
   }
@@ -454,45 +497,61 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
   }
 
-  // --- LÓGICA DE PUNTUACIÓN MODIFICADA PARA JUEGO CONTINUO ---
-
-  // Obtener solo los 10 frames de la ronda actual para mostrar en pantalla
-  getVisibleFrames(player: Player): (number | null)[][] {
-    const startIndex = (this.currentRound - 1) * 10;
-    const endIndex = startIndex + 10;
-    return player.frames.slice(startIndex, endIndex);
-  }
+  // --- LÓGICA DE PUNTUACIÓN MODIFICADA PARA JUEGO CLÁSICO CON PARTIDAS MÚLTIPLES ---
 
   calculateFrameScore(playerFrames: (number | null)[][], frameIndex: number): number | null {
     const frame = playerFrames[frameIndex];
     if (!frame) return null;
 
+    // FRAME 10 (índice 9): Lógica especial con 3 tiros
+    if (frameIndex === 9) {
+      const [roll1, roll2, roll3] = frame;
+      
+      if (roll1 === null) return null;
+      
+      // Strike en primer tiro
+      if (roll1 === 10) {
+        if (roll2 === null || roll3 === null) return null;
+        return roll1 + roll2 + roll3;
+      }
+      
+      // Spare en primeros dos tiros
+      if (roll2 !== null && roll1 + roll2 === 10) {
+        if (roll3 === null) return null;
+        return roll1 + roll2 + roll3;
+      }
+      
+      // Sin strike ni spare
+      if (roll2 === null) return null;
+      return roll1 + roll2;
+    }
+
+    // FRAMES 1-9: Lógica clásica
     const [roll1, roll2] = frame;
     
     if (roll1 === null) return null;
     
-    // Lógica de Strike (10 puntos + siguientes 2 tiros)
+    // Strike (10 puntos + siguientes 2 tiros)
     if (roll1 === 10) {
-      // Mirar el siguiente frame
       const nextFrame = playerFrames[frameIndex + 1];
-      if (!nextFrame || nextFrame[0] === null) return null; // Esperando siguiente tiro
+      if (!nextFrame || nextFrame[0] === null) return null;
       
       let score = 10 + nextFrame[0];
       
-      if (nextFrame[0] === 10) {
-        // Si el siguiente fue strike, necesitamos mirar el subsiguiente
+      // Si siguiente es strike y no es frame 10
+      if (nextFrame[0] === 10 && frameIndex + 1 !== 9) {
         const nextNextFrame = playerFrames[frameIndex + 2];
         if (!nextNextFrame || nextNextFrame[0] === null) return null;
         score += nextNextFrame[0];
       } else {
-        // Si no fue strike, sumar el segundo tiro del siguiente frame
+        // Si siguiente es frame 10 o no es strike
         if (nextFrame[1] === null) return null;
         score += nextFrame[1];
       }
       return score;
     }
     
-    // Lógica de Spare (10 puntos + siguiente 1 tiro)
+    // Spare (10 puntos + siguiente 1 tiro)
     if (roll2 === null) return null;
     
     if (roll1 + roll2 === 10) {
@@ -507,8 +566,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   calculateTotalScore(playerFrames: (number | null)[][]): number {
     let total = 0;
-    // Calculamos puntuación de TODOS los frames, no solo los visibles
-    for (let i = 0; i < playerFrames.length; i++) {
+    // Calculamos puntuación de los 10 frames (0-9)
+    for (let i = 0; i < 10; i++) {
       const frameScore = this.calculateFrameScore(playerFrames, i);
       if (frameScore !== null) {
         total += frameScore;
@@ -517,22 +576,36 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return total;
   }
 
-  getFrameScoreForDisplay(player: Player, globalIndex: number): number | null {
-    const scores: (number | null)[] = [];
+  // Obtiene el score acumulado de todas las partidas completadas + la actual
+  getAccumulatedScore(player: Player): number {
+    const completedTotal = player.completedGames.reduce((sum, score) => sum + score, 0);
+    const currentGameScore = this.calculateTotalScore(player.frames);
+    return completedTotal + currentGameScore;
+  }
+
+  // Obtiene el número de juego actual
+  getCurrentGameNumber(): number {
+    return this.players[0]?.currentGameNumber || 1;
+  }
+
+  getFrameScoreForDisplay(player: Player, frameIndex: number): number | null {
+    // frameIndex debe estar entre 0-9
+    if (frameIndex < 0 || frameIndex > 9) return null;
+    
     let cumulative = 0;
     
     // Recalcular hasta el índice deseado para obtener el acumulado correcto
-    for (let i = 0; i <= globalIndex; i++) {
+    for (let i = 0; i <= frameIndex; i++) {
       const frameScore = this.calculateFrameScore(player.frames, i);
       if (frameScore === null) {
-        return null; // Si un frame anterior está incompleto, no mostramos totales futuros (o mostramos parciales según preferencia)
+        return null; // Si un frame anterior está incompleto, no mostramos totales futuros
       } else {
         cumulative += frameScore;
       }
     }
     
     // Verificamos si el frame actual ya tiene score calculado
-    if (this.calculateFrameScore(player.frames, globalIndex) === null) return null;
+    if (this.calculateFrameScore(player.frames, frameIndex) === null) return null;
 
     return cumulative;
   }
@@ -548,11 +621,64 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Asegurar que el frame existe
     if (!this.players[this.currentPlayer].frames[this.currentFrame]) {
-       // Esto no debería pasar con la lógica de expansión, pero por seguridad:
        return; 
     }
 
     const frame = [...this.players[this.currentPlayer].frames[this.currentFrame]];
+    
+    // ===== LÓGICA ESPECIAL PARA FRAME 10 =====
+    if (this.currentFrame === 9) {
+      // Frame 10 tiene hasta 3 tiros
+      if (this.currentRoll === 0) {
+        // Primer tiro del frame 10
+        frame[0] = pins;
+        this.players[this.currentPlayer].frames[this.currentFrame] = frame;
+        
+        if (pins === 10) {
+          // Strike! Continuar al segundo tiro
+          this.currentRoll = 1;
+        } else {
+          // No es strike, continuar al segundo tiro
+          this.currentRoll = 1;
+        }
+      } else if (this.currentRoll === 1) {
+        // Segundo tiro del frame 10
+        
+        // Validación: si el primer tiro no fue strike, la suma no puede exceder 10
+        if (frame[0] !== null && frame[0] !== 10 && frame[0] + pins > 10) {
+          console.error(`Error: No puedes derribar ${pins} pinos. Solo quedan ${10 - frame[0]} pinos disponibles.`);
+          return;
+        }
+        
+        frame[1] = pins;
+        this.players[this.currentPlayer].frames[this.currentFrame] = frame;
+        
+        // Verificar si hay tercer tiro
+        const needsThirdRoll = frame[0] === 10 || (frame[0] !== null && frame[0] + pins === 10);
+        
+        if (needsThirdRoll) {
+          this.currentRoll = 2;
+        } else {
+          // No hay tercer tiro, pasar al siguiente jugador
+          this.moveToNextTurn();
+        }
+      } else if (this.currentRoll === 2) {
+        // Tercer tiro del frame 10
+        
+        // Validación: si el segundo tiro no fue strike (y el primero sí), la suma del 2do y 3ro no puede exceder 10
+        if (frame[0] === 10 && frame[1] !== null && frame[1] !== 10 && frame[1] + pins > 10) {
+          console.error(`Error: No puedes derribar ${pins} pinos. Solo quedan ${10 - frame[1]} pinos disponibles.`);
+          return;
+        }
+        
+        frame[2] = pins;
+        this.players[this.currentPlayer].frames[this.currentFrame] = frame;
+        this.moveToNextTurn();
+      }
+      return;
+    }
+    
+    // ===== LÓGICA PARA FRAMES 1-9 (CLÁSICA) =====
     
     // VALIDACIÓN 2: En segundo tiro, suma no puede exceder 10 (excepto si primer tiro fue strike)
     if (this.currentRoll === 1 && frame[0] !== null && frame[0] !== 10) {
@@ -567,8 +693,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       this.players[this.currentPlayer].frames[this.currentFrame] = frame;
       
       if (pins === 10) {
-        // Strike! Pasar turno.
-        // En modo continuo, no hay segundo tiro en strike.
+        // Strike! Pasar turno (no hay segundo tiro en frames 1-9)
         this.moveToNextTurn();
       } else {
         this.currentRoll = 1;
@@ -598,22 +723,29 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       this.currentFrame++;
       this.currentRoll = 0;
 
-      // 3. Verificar si necesitamos una nueva página visual (Ronda)
-      // Si el currentFrame (índice 0-based) es múltiplo de 10 (ej: 10, 20), cambiamos de ronda
-      if (this.currentFrame % 10 === 0) {
-        this.currentRound++;
-        // Expandir arrays de frames para todos los jugadores
-        this.expandFrames();
+      // 3. Si completamos los 10 frames (currentFrame ahora es 10), iniciar nueva partida
+      if (this.currentFrame === 10) {
+        this.startNewGame();
       }
     }
   }
 
-  expandFrames() {
-    // Agregamos 10 frames vacíos más a cada jugador
+  // Inicia una nueva partida al completar los 10 frames
+  startNewGame() {
+    // Guardar el score de la partida completada para cada jugador
     this.players.forEach(player => {
-      const newFrames = Array.from({ length: 10 }, () => [null, null]);
-      player.frames = [...player.frames, ...newFrames];
+      const gameScore = this.calculateTotalScore(player.frames);
+      player.completedGames.push(gameScore);
+      player.currentGameNumber++;
+      // Resetear frames para la nueva partida
+      player.frames = this.createInitialFrames();
     });
+    
+    // Resetear estado del juego
+    this.currentFrame = 0;
+    this.currentRoll = 0;
+    this.currentPlayer = 0;
+    // El tiempo continúa corriendo
   }
 
   finishGame() {
@@ -625,12 +757,13 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   resetGame() {
     this.players = [{
       name: 'Jugador 1',
-      frames: Array.from({ length: 10 }, () => [null, null])
+      frames: this.createInitialFrames(),
+      completedGames: [],
+      currentGameNumber: 1
     }];
     this.currentPlayer = 0;
     this.currentFrame = 0;
     this.currentRoll = 0;
-    this.currentRound = 1;
     this.timeRemaining = this.timeLimit * 60;
     this.isTimerRunning = false;
     this.gameStarted = false;
@@ -644,7 +777,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.passwordInput = '';
     this.passwordError = false;
     this.extraTimeAdded = false;
-    this.editMode = false; // Resetear modo de edición
+    this.editMode = false;
   }
 
   startGame() {
@@ -661,22 +794,43 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   getAvailablePins(): number {
     const frame = this.players[this.currentPlayer].frames[this.currentFrame];
-    // Modo continuo: siempre 10, a menos que sea el segundo tiro
+    
+    // Frame 10: lógica especial
+    if (this.currentFrame === 9) {
+      if (this.currentRoll === 0) return 10; // Primer tiro: siempre 10
+      if (this.currentRoll === 1) {
+        // Segundo tiro: si hubo strike, resetea a 10; sino, lo que queda
+        return frame[0] === 10 ? 10 : 10 - (frame[0] || 0);
+      }
+      if (this.currentRoll === 2) {
+        // Tercer tiro: si el segundo fue strike, resetea a 10; sino, lo que queda
+        return frame[1] === 10 ? 10 : 10 - (frame[1] || 0);
+      }
+    }
+    
+    // Frames 1-9: lógica clásica
     if (this.currentRoll === 0) return 10;
     return 10 - (frame[0] || 0);
   }
 
-  displayRoll(roll: number | null, firstRoll: number | null): string {
+  displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false): string {
     if (roll === null) return '';
     
-    // Determinar si es segundo tiro basado en el contexto de firstRoll
-    const isFirstRoll = (firstRoll === null || firstRoll === 10);
+    // Frame 10: mostrar siempre el número o X
+    if (isFrame10) {
+      if (roll === 10) return 'X';
+      if (roll === 0) return '-';
+      return roll.toString();
+    }
+    
+    // Frames 1-9: lógica clásica
+    const isFirstRoll = (previousRoll === null || previousRoll === 10);
     
     // Strike (10 pinos en primer tiro)
     if (roll === 10 && isFirstRoll) return 'X';
     
     // Spare (completa 10 con el primer tiro)
-    if (!isFirstRoll && firstRoll !== null && firstRoll + roll === 10) return '/';
+    if (!isFirstRoll && previousRoll !== null && previousRoll + roll === 10) return '/';
     
     // Número normal (mostrar "-" cuando es 0)
     return roll === 0 ? '-' : roll.toString();
