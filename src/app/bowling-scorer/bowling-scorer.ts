@@ -305,7 +305,7 @@ interface CompletedGame {
             <div class="bg-white/20 backdrop-blur rounded-2xl p-6 mb-6 border-2 border-white/30">
               <p class="text-3xl font-semibold mb-3">{{ getWinnerMessage() }}</p>
               <p class="text-6xl font-bold drop-shadow-lg">{{ getWinnerScore() }} puntos</p>
-              <p class="text-xl mt-4 opacity-90">Frames jugados: {{ currentFrame }}</p>
+              <p class="text-xl mt-4 opacity-90">Juegos jugados: {{ getTotalGamesPlayed() }}</p>
             </div>
 
             <div *ngIf="players.length > 1" class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-6">
@@ -856,7 +856,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   getWinners(): { name: string; score: number }[] {
     const playersWithScores = this.players.map(player => ({
       name: player.name,
-      score: this.calculateTotalScore(player.frames)
+      score: this.getAccumulatedScore(player) // Usar score acumulado en lugar del juego actual
     }));
     
     const maxScore = Math.max(...playersWithScores.map(p => p.score));
@@ -867,8 +867,20 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return this.players
       .map(player => ({
         name: player.name,
-        score: this.calculateTotalScore(player.frames)
+        score: this.getAccumulatedScore(player) // Usar score acumulado en lugar del juego actual
       }))
       .sort((a, b) => b.score - a.score);
+  }
+
+  getTotalGamesPlayed(): number {
+    // Retorna el número de juegos completados + si hay un juego en progreso
+    if (this.players.length === 0) return 0;
+    
+    const completedGames = this.players[0].completedGames.length;
+    const hasCurrentGame = this.currentFrame > 0 || this.players.some(p => 
+      p.frames.some(f => f.some(roll => roll !== null))
+    );
+    
+    return completedGames + (hasCurrentGame ? 1 : 0);
   }
 }
