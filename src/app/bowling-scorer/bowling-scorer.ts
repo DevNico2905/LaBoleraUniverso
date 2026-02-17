@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 
 interface Frame {
   rolls: (number | null)[];
@@ -340,6 +340,61 @@ interface CompletedGame {
           </div>
         </div>
       </div>
+
+      <!-- Botón flotante de cancelar (solo visible cuando el juego está en curso) -->
+      <button
+        *ngIf="gameStarted && !gameFinished"
+        (click)="openCancelPrompt()"
+        class="fixed bottom-6 right-6 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl transition transform hover:scale-110 z-40"
+        title="Cancelar partida"
+      >
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Modal de cancelar partida -->
+      <div *ngIf="showCancelPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+        <div class="bg-gradient-to-brown from-red-500 to-rose-700 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+          <div class="text-center text-white">
+            <div class="text-6xl mb-4">⚠️</div>
+            <h2 class="text-3xl font-bold mb-4">Cancelar Partida</h2>
+            <p class="text-lg mb-6">Ingrese la contraseña del administrador para cancelar el juego en curso</p>
+
+            <input
+              type="password"
+              [(ngModel)]="cancelPasswordInput"
+              (keyup.enter)="validateCancelPassword()"
+              placeholder="Contraseña"
+              class="w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold mb-2 border-2 border-white/40 focus:outline-none focus:ring-4 focus:ring-white/40 placeholder:text-white/80"
+              autofocus
+            />
+
+            <p *ngIf="cancelPasswordError" class="text-red-200 bg-red-800/40 rounded-lg px-4 py-2 mb-4 font-semibold">
+              ❌ Contraseña incorrecta
+            </p>
+
+            <p *ngIf="cancelPasswordSuccess" class="text-green-200 bg-green-800/40 rounded-lg px-4 py-2 mb-4 font-semibold animate-pulse">
+              ✅ Juego cancelado
+            </p>
+
+            <div class="flex gap-4 justify-center mt-6">
+              <button
+                (click)="closeCancelPrompt()"
+                [disabled]="cancelPasswordSuccess"
+                class="bg-white/20 text-white hover:bg-white/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
+                Cancelar
+              </button>
+              <button
+                (click)="validateCancelPassword()"
+                [disabled]="cancelPasswordSuccess"
+                class="bg-white text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
   `,
   styles: [`
     @keyframes fadeIn {
@@ -386,7 +441,12 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   extraTimeAdded = false;
   
   editMode = false;
-  
+
+  showCancelPrompt = false;
+  cancelPasswordInput = '';
+  cancelPasswordError = false;
+  cancelPasswordSuccess = false;
+
   get hasCompletedGames(): boolean {
     return this.players.length > 0 && this.players[0].completedGames.length > 0;
   }
@@ -395,6 +455,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   private alertedAt5 = false;
   
   private timerInterval: any;
+
+  constructor(private router: Router) {}
 
   ngOnInit() {
     this.startTimer();
@@ -418,7 +480,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   @HostListener('window:keydown', ['$event'])
   handleKeyPress(event: KeyboardEvent) {
-    if (!this.gameStarted || this.gameFinished || this.editMode) return;
+    if (!this.gameStarted || this.gameFinished || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
     
     const num = parseInt(event.key);
     if (!isNaN(num) && num >= 0 && num <= this.getAvailablePins()) {
@@ -469,6 +531,21 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   closeTimeWarning() { this.showTimeWarning = false; }
   openPasswordPrompt() { this.showPasswordPrompt = true; this.passwordInput = ''; this.passwordError = false; }
   cancelPasswordPrompt() { this.showPasswordPrompt = false; }
+
+  openCancelPrompt() { this.showCancelPrompt = true; this.cancelPasswordInput = ''; this.cancelPasswordError = false; }
+  closeCancelPrompt() { this.showCancelPrompt = false; }
+
+  validateCancelPassword() {
+    if (this.cancelPasswordInput === this.correctPassword) {
+      this.cancelPasswordSuccess = true;
+      setTimeout(() => {
+        this.resetGame();
+        this.router.navigate(['']);
+      }, 1500);
+    } else {
+      this.cancelPasswordError = true;
+    }
+  }
   
   validatePassword() {
     if (this.passwordInput === this.correctPassword) {
@@ -783,6 +860,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.passwordError = false;
     this.extraTimeAdded = false;
     this.editMode = false;
+    this.showCancelPrompt = false;
+    this.cancelPasswordInput = '';
+    this.cancelPasswordError = false;
+    this.cancelPasswordSuccess = false;
   }
 
   startGame() {
