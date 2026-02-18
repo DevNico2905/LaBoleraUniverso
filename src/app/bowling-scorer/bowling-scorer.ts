@@ -2,6 +2,9 @@ import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { AccountingService } from '../services/accounting.service';
+import { DailySummary } from '../models/accounting.models';
 
 interface Frame {
   rolls: (number | null)[];
@@ -26,6 +29,29 @@ interface CompletedGame {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
+      <!-- APP LOCKED OVERLAY -->
+      <div *ngIf="isAppLocked" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center">
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-white/20 shadow-2xl text-center">
+            <h1 class="text-4xl font-bold text-white mb-6">🔒 Sistema Bloqueado</h1>
+            <p class="text-gray-300 mb-6">Ingrese la contraseña de administrador para iniciar.</p>
+            <input 
+              type="password" 
+              [(ngModel)]="unlockPasswordInput" 
+              (keyup.enter)="unlockApp()"
+              class="w-full px-4 py-3 rounded-xl bg-white/20 text-white text-center text-xl border border-white/30 focus:outline-none focus:border-blue-500 mb-4 placeholder-gray-400"
+              placeholder="Contraseña"
+              autofocus
+            >
+            <p *ngIf="unlockError" class="text-red-400 mb-4 font-semibold">Contraseña incorrecta</p>
+            <button 
+              (click)="unlockApp()"
+              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg"
+            >
+              Desbloquear
+            </button>
+        </div>
+      </div>
+
       <div class="max-w-[95%] m-auto ">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
@@ -395,6 +421,8 @@ interface CompletedGame {
           </div>
         </div>
       </div>
+
+      <!-- Day Closing Modal REMOVED -->
   `,
   styles: [`
     @keyframes fadeIn {
@@ -413,6 +441,11 @@ interface CompletedGame {
   `]
 })
 export class BowlingScorerComponent implements OnInit, OnDestroy {
+  // Security & Accounting
+  isAppLocked = true;
+  unlockPasswordInput = '';
+  unlockError = false;
+
   // Inicializamos con 10 frames (el último con 3 espacios)
   players: Player[] = [{
     name: 'Jugador 1',
@@ -420,18 +453,18 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     completedGames: [],
     currentGameNumber: 1
   }];
-  
+
   currentPlayer = 0;
   currentFrame = 0;
   currentRoll = 0;
-  
+
   timeLimit = 6;
   timeRemaining = 6 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
   stopPending = false;
-  
+
   showTimeWarning = false;
   timeWarningMessage = '';
   showPasswordPrompt = false;
@@ -439,7 +472,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   correctPassword = 'admin123';
   passwordError = false;
   extraTimeAdded = false;
-  
+
   editMode = false;
 
   showCancelPrompt = false;
@@ -450,15 +483,21 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   get hasCompletedGames(): boolean {
     return this.players.length > 0 && this.players[0].completedGames.length > 0;
   }
-  
+
   private alertedAt15 = false;
   private alertedAt5 = false;
-  
+
   private timerInterval: any;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+    private accountingService: AccountingService
+  ) { }
 
   ngOnInit() {
+    // Check auth status. If not authenticated, lock app.
+    this.isAppLocked = !this.authService.isAuthenticated();
     this.startTimer();
   }
 
@@ -481,7 +520,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   @HostListener('window:keydown', ['$event'])
   handleKeyPress(event: KeyboardEvent) {
     if (!this.gameStarted || this.gameFinished || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
-    
+
     const num = parseInt(event.key);
     if (!isNaN(num) && num >= 0 && num <= this.getAvailablePins()) {
       this.recordPins(num);
@@ -492,20 +531,20 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.timerInterval = setInterval(() => {
       if (this.isTimerRunning && this.timeRemaining > 0) {
         this.timeRemaining--;
-        
+
         // Alertas de tiempo (sin cambios)
         if (this.timeRemaining === 900 && !this.alertedAt15) {
           this.alertedAt15 = true;
           this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
           this.showTimeWarning = true;
         }
-        
+
         if (this.timeRemaining === 300 && !this.alertedAt5) {
           this.alertedAt5 = true;
           this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
           this.showTimeWarning = true;
         }
-        
+
         // Cuando el tiempo llega a 0, NO paramos inmediatamente.
         // Activamos la bandera para terminar al final del frame actual.
         if (this.timeRemaining === 0) {
@@ -538,6 +577,14 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   validateCancelPassword() {
     if (this.cancelPasswordInput === this.correctPassword) {
       this.cancelPasswordSuccess = true;
+
+      // Accounting Hook: Mark as Cancelled
+      if (this.currentSessionId) {
+        const billedMinutes = this.calculateBilledDuration();
+        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled');
+        this.currentSessionId = null;
+      }
+
       setTimeout(() => {
         this.resetGame();
         this.router.navigate(['']);
@@ -546,7 +593,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       this.cancelPasswordError = true;
     }
   }
-  
+
   validatePassword() {
     if (this.passwordInput === this.correctPassword) {
       this.timeRemaining += 30 * 60;
@@ -579,6 +626,23 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
   }
 
+  // --- SECURITY & ACCOUNTING METHODS ---
+
+  unlockApp() {
+    if (this.authService.login(this.unlockPasswordInput)) {
+      this.isAppLocked = false;
+      this.unlockPasswordInput = '';
+      this.unlockError = false;
+    } else {
+      this.unlockError = true;
+    }
+  }
+
+  // Hook into Start Game
+  private currentSessionId: string | null = null;
+
+  // Hooks for accounting will be added to existing methods below
+
   // --- LÓGICA DE PUNTUACIÓN MODIFICADA PARA JUEGO CLÁSICO CON PARTIDAS MÚLTIPLES ---
 
   calculateFrameScore(playerFrames: (number | null)[][], frameIndex: number): number | null {
@@ -588,21 +652,21 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // FRAME 10 (índice 9): Lógica especial con 3 tiros
     if (frameIndex === 9) {
       const [roll1, roll2, roll3] = frame;
-      
+
       if (roll1 === null) return null;
-      
+
       // Strike en primer tiro
       if (roll1 === 10) {
         if (roll2 === null || roll3 === null) return null;
         return roll1 + roll2 + roll3;
       }
-      
+
       // Spare en primeros dos tiros
       if (roll2 !== null && roll1 + roll2 === 10) {
         if (roll3 === null) return null;
         return roll1 + roll2 + roll3;
       }
-      
+
       // Sin strike ni spare
       if (roll2 === null) return null;
       return roll1 + roll2;
@@ -610,16 +674,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // FRAMES 1-9: Lógica clásica
     const [roll1, roll2] = frame;
-    
+
     if (roll1 === null) return null;
-    
+
     // Strike (10 puntos + siguientes 2 tiros)
     if (roll1 === 10) {
       const nextFrame = playerFrames[frameIndex + 1];
       if (!nextFrame || nextFrame[0] === null) return null;
-      
+
       let score = 10 + nextFrame[0];
-      
+
       // Si siguiente es strike y no es frame 10
       if (nextFrame[0] === 10 && frameIndex + 1 !== 9) {
         const nextNextFrame = playerFrames[frameIndex + 2];
@@ -632,16 +696,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       }
       return score;
     }
-    
+
     // Spare (10 puntos + siguiente 1 tiro)
     if (roll2 === null) return null;
-    
+
     if (roll1 + roll2 === 10) {
       const nextFrame = playerFrames[frameIndex + 1];
       if (!nextFrame || nextFrame[0] === null) return null;
       return 10 + nextFrame[0];
     }
-    
+
     // Frame abierto
     return roll1 + roll2;
   }
@@ -673,9 +737,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   getFrameScoreForDisplay(player: Player, frameIndex: number): number | null {
     // frameIndex debe estar entre 0-9
     if (frameIndex < 0 || frameIndex > 9) return null;
-    
+
     let cumulative = 0;
-    
+
     // Recalcular hasta el índice deseado para obtener el acumulado correcto
     for (let i = 0; i <= frameIndex; i++) {
       const frameScore = this.calculateFrameScore(player.frames, i);
@@ -685,7 +749,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         cumulative += frameScore;
       }
     }
-    
+
     // Verificamos si el frame actual ya tiene score calculado
     if (this.calculateFrameScore(player.frames, frameIndex) === null) return null;
 
@@ -703,11 +767,11 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Asegurar que el frame existe
     if (!this.players[this.currentPlayer].frames[this.currentFrame]) {
-       return; 
+      return;
     }
 
     const frame = [...this.players[this.currentPlayer].frames[this.currentFrame]];
-    
+
     // ===== LÓGICA ESPECIAL PARA FRAME 10 =====
     if (this.currentFrame === 9) {
       // Frame 10 tiene hasta 3 tiros
@@ -715,7 +779,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         // Primer tiro del frame 10
         frame[0] = pins;
         this.players[this.currentPlayer].frames[this.currentFrame] = frame;
-        
+
         if (pins === 10) {
           // Strike! Continuar al segundo tiro
           this.currentRoll = 1;
@@ -725,19 +789,19 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         }
       } else if (this.currentRoll === 1) {
         // Segundo tiro del frame 10
-        
+
         // Validación: si el primer tiro no fue strike, la suma no puede exceder 10
         if (frame[0] !== null && frame[0] !== 10 && frame[0] + pins > 10) {
           console.error(`Error: No puedes derribar ${pins} pinos. Solo quedan ${10 - frame[0]} pinos disponibles.`);
           return;
         }
-        
+
         frame[1] = pins;
         this.players[this.currentPlayer].frames[this.currentFrame] = frame;
-        
+
         // Verificar si hay tercer tiro
         const needsThirdRoll = frame[0] === 10 || (frame[0] !== null && frame[0] + pins === 10);
-        
+
         if (needsThirdRoll) {
           this.currentRoll = 2;
         } else {
@@ -746,22 +810,22 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         }
       } else if (this.currentRoll === 2) {
         // Tercer tiro del frame 10
-        
+
         // Validación: si el segundo tiro no fue strike (y el primero sí), la suma del 2do y 3ro no puede exceder 10
         if (frame[0] === 10 && frame[1] !== null && frame[1] !== 10 && frame[1] + pins > 10) {
           console.error(`Error: No puedes derribar ${pins} pinos. Solo quedan ${10 - frame[1]} pinos disponibles.`);
           return;
         }
-        
+
         frame[2] = pins;
         this.players[this.currentPlayer].frames[this.currentFrame] = frame;
         this.moveToNextTurn();
       }
       return;
     }
-    
+
     // ===== LÓGICA PARA FRAMES 1-9 (CLÁSICA) =====
-    
+
     // VALIDACIÓN 2: En segundo tiro, suma no puede exceder 10 (excepto si primer tiro fue strike)
     if (this.currentRoll === 1 && frame[0] !== null && frame[0] !== 10) {
       if (frame[0] + pins > 10) {
@@ -769,11 +833,11 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         return;
       }
     }
-    
+
     if (this.currentRoll === 0) {
       frame[0] = pins;
       this.players[this.currentPlayer].frames[this.currentFrame] = frame;
-      
+
       if (pins === 10) {
         // Strike! Pasar turno (no hay segundo tiro en frames 1-9)
         this.moveToNextTurn();
@@ -792,7 +856,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.currentPlayer < this.players.length - 1) {
       this.currentPlayer++;
       this.currentRoll = 0;
-    } 
+    }
     // 2. Si todos jugaron este frame, avanzar al siguiente frame
     else {
       // Verificar si el tiempo se acabó y estamos al final de la ronda de jugadores
@@ -822,7 +886,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       // Resetear frames para la nueva partida
       player.frames = this.createInitialFrames();
     });
-    
+
     // Resetear estado del juego
     this.currentFrame = 0;
     this.currentRoll = 0;
@@ -830,13 +894,44 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // El tiempo continúa corriendo
   }
 
+  // Helper to calculate billed duration based on timer
+  private calculateBilledDuration(): number {
+    // Theoretical time = Initial Time Limit - Remaining Time
+    // timeLimit is in minutes, timeRemaining in seconds
+    const initialSeconds = this.timeLimit * 60;
+    const usedSeconds = initialSeconds - this.timeRemaining;
+
+    // If timeRemaining is 0 (or less), duration is the full time limit
+    if (this.timeRemaining <= 0) {
+      return this.timeLimit;
+    }
+
+    // Otherwise calculate used minutes, rounding up
+    return Math.ceil(usedSeconds / 60);
+  }
+
   finishGame() {
     this.isTimerRunning = false;
     this.gameFinished = true;
     this.stopTimer();
+
+    // Accounting Hook
+    if (this.currentSessionId) {
+      const billedMinutes = this.calculateBilledDuration();
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed');
+      this.currentSessionId = null;
+    }
   }
 
   resetGame() {
+    // Accounting Hook: If resetting an active game (and not already handled by cancel), close as cancelled
+    // This is a fallback or for development reset.
+    if (this.gameStarted && !this.gameFinished && this.currentSessionId) {
+      const billedMinutes = this.calculateBilledDuration();
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled');
+      this.currentSessionId = null;
+    }
+
     this.players = [{
       name: 'Jugador 1',
       frames: this.createInitialFrames(),
@@ -864,11 +959,17 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.cancelPasswordInput = '';
     this.cancelPasswordError = false;
     this.cancelPasswordSuccess = false;
+
+    // Ensure timer restarts if needed (though existing logic stops it)
+    this.startTimer();
   }
 
   startGame() {
     this.gameStarted = true;
     this.isTimerRunning = true;
+
+    // Accounting Hook
+    this.currentSessionId = this.accountingService.startGame(this.players.length);
   }
 
   changeTimeLimit(minutes: number) {
@@ -880,7 +981,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   getAvailablePins(): number {
     const frame = this.players[this.currentPlayer].frames[this.currentFrame];
-    
+
     // Frame 10: lógica especial
     if (this.currentFrame === 9) {
       if (this.currentRoll === 0) return 10; // Primer tiro: siempre 10
@@ -893,7 +994,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         return frame[1] === 10 ? 10 : 10 - (frame[1] || 0);
       }
     }
-    
+
     // Frames 1-9: lógica clásica
     if (this.currentRoll === 0) return 10;
     return 10 - (frame[0] || 0);
@@ -901,23 +1002,23 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false): string {
     if (roll === null) return '';
-    
+
     // Frame 10: mostrar siempre el número o X
     if (isFrame10) {
       if (roll === 10) return 'X';
       if (roll === 0) return '-';
       return roll.toString();
     }
-    
+
     // Frames 1-9: lógica clásica
     const isFirstRoll = (previousRoll === null || previousRoll === 10);
-    
+
     // Strike (10 pinos en primer tiro)
     if (roll === 10 && isFirstRoll) return 'X';
-    
+
     // Spare (completa 10 con el primer tiro)
     if (!isFirstRoll && previousRoll !== null && previousRoll + roll === 10) return '/';
-    
+
     // Número normal (mostrar "-" cuando es 0)
     return roll === 0 ? '-' : roll.toString();
   }
@@ -944,7 +1045,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       name: player.name,
       score: this.getAccumulatedScore(player) // Usar score acumulado en lugar del juego actual
     }));
-    
+
     const maxScore = Math.max(...playersWithScores.map(p => p.score));
     return playersWithScores.filter(p => p.score === maxScore);
   }
@@ -961,12 +1062,12 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   getTotalGamesPlayed(): number {
     // Retorna el número de juegos completados + si hay un juego en progreso
     if (this.players.length === 0) return 0;
-    
+
     const completedGames = this.players[0].completedGames.length;
-    const hasCurrentGame = this.currentFrame > 0 || this.players.some(p => 
+    const hasCurrentGame = this.currentFrame > 0 || this.players.some(p =>
       p.frames.some(f => f.some(roll => roll !== null))
     );
-    
+
     return completedGames + (hasCurrentGame ? 1 : 0);
   }
 }

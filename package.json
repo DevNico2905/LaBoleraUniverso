@@ -38,15 +38,21 @@
     },
     "win": {
       "target": [
-      {
-        "target": "nsis",
-        "arch": ["x64", "arm64"]
-      },
-      {
-        "target": "portable", 
-        "arch": ["x64", "arm64"]
-      }
-    ],
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
       "icon": "src/assets/icons/icon.ico"
     },
     "linux": {
@@ -82,6 +88,7 @@
     "rxjs": "~7.8.0",
     "tailwindcss": "^4.1.18",
     "tslib": "^2.3.0",
+    "xlsx": "^0.18.5",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
