@@ -19,12 +19,35 @@ export class Home {
   closingPasswordError = false;
   dailySummary: DailySummary | null = null;
 
+  showOpenDayModal = false;
+  openingPasswordInput = '';
+  openingPasswordError = false;
+
   private readonly correctPassword = 'admin123'; // Hardcoded as requested default
 
   constructor(
-    private accountingService: AccountingService,
+    public accountingService: AccountingService, // Public to access isDayOpen in template
     private authService: AuthService
   ) { }
+
+  openDay() {
+    this.showOpenDayModal = true;
+    this.openingPasswordInput = '';
+    this.openingPasswordError = false;
+  }
+
+  closeOpenDayModal() {
+    this.showOpenDayModal = false;
+  }
+
+  processOpenDay() {
+    if (this.openingPasswordInput === this.correctPassword) {
+      this.accountingService.openDay();
+      this.showOpenDayModal = false;
+    } else {
+      this.openingPasswordError = true;
+    }
+  }
 
   openDayClosing() {
     this.showDailyClosing = true;

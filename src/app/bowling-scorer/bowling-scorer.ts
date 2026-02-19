@@ -29,29 +29,7 @@ interface CompletedGame {
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
-      <!-- APP LOCKED OVERLAY -->
-      <div *ngIf="isAppLocked" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center">
-        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 max-w-md w-full border border-white/20 shadow-2xl text-center">
-            <h1 class="text-4xl font-bold text-white mb-6">🔒 Sistema Bloqueado</h1>
-            <p class="text-gray-300 mb-6">Ingrese la contraseña de administrador para iniciar.</p>
-            <input 
-              type="password" 
-              [(ngModel)]="unlockPasswordInput" 
-              (keyup.enter)="unlockApp()"
-              class="w-full px-4 py-3 rounded-xl bg-white/20 text-white text-center text-xl border border-white/30 focus:outline-none focus:border-blue-500 mb-4 placeholder-gray-400"
-              placeholder="Contraseña"
-              autofocus
-            >
-            <p *ngIf="unlockError" class="text-red-400 mb-4 font-semibold">Contraseña incorrecta</p>
-            <button 
-              (click)="unlockApp()"
-              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg"
-            >
-              Desbloquear
-            </button>
-        </div>
-      </div>
-
+      <!-- App Lock Screen REMOVED -->
       <div class="max-w-[95%] m-auto ">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
           <div class="flex justify-between items-center mb-8">
@@ -442,9 +420,7 @@ interface CompletedGame {
 })
 export class BowlingScorerComponent implements OnInit, OnDestroy {
   // Security & Accounting
-  isAppLocked = true;
-  unlockPasswordInput = '';
-  unlockError = false;
+  // App Lock REMOVED - Managed by Home Component
 
   // Inicializamos con 10 frames (el último con 3 espacios)
   players: Player[] = [{
@@ -458,8 +434,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
-  timeLimit = 6;
-  timeRemaining = 6 * 60;
+  timeLimit = 30;
+  timeRemaining = 30 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
@@ -491,13 +467,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
-    private authService: AuthService,
-    private accountingService: AccountingService
+    private accountingService: AccountingService,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
-    // Check auth status. If not authenticated, lock app.
-    this.isAppLocked = !this.authService.isAuthenticated();
+    // Security Check: Redirect if day is not open
+    if (!this.accountingService.isDayOpen) {
+      this.router.navigate(['']);
+      return;
+    }
     this.startTimer();
   }
 
@@ -628,15 +607,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   // --- SECURITY & ACCOUNTING METHODS ---
 
-  unlockApp() {
-    if (this.authService.login(this.unlockPasswordInput)) {
-      this.isAppLocked = false;
-      this.unlockPasswordInput = '';
-      this.unlockError = false;
-    } else {
-      this.unlockError = true;
-    }
-  }
+  // Unlock App Method REMOVED
 
   // Hook into Start Game
   private currentSessionId: string | null = null;

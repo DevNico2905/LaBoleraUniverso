@@ -8,6 +8,8 @@ import * as XLSX from 'xlsx';
 export class AccountingService {
     private readonly STORAGE_KEY = 'bowling_daily_sessions';
     private readonly CONFIG_KEY = 'bowling_pricing_config';
+    private readonly STATE_KEY_REMOVED = ''; // Removed
+
     // Default Config: Adjusted to match reasonable rates.
     // Assuming Colombia due to language, maybe 50,000 COP/hour?
     // Let's use a generic value or allow change. 
@@ -20,6 +22,7 @@ export class AccountingService {
     };
 
     private currentSessions: GameSession[] = [];
+    public isDayOpen = false;
 
     constructor() {
         this.loadSessions();
@@ -94,20 +97,58 @@ export class AccountingService {
             session.totalTimeMinutes = Math.ceil(durationMs / 1000 / 60);
         }
 
-        // Calculate Amount based on Block Logic
-        // 1 block = 30 minutes
-        const blocks = Math.ceil(session.totalTimeMinutes / 30);
+        if (status === 'cancelled') {
+            session.amountCollected = this.calculateCancellationCost(session.totalTimeMinutes);
+        } else {
+            // Standard Completed Game Logic (Block Based)
+            // 1 block = 30 minutes
+            const blocks = Math.ceil(session.totalTimeMinutes / 30);
 
-        // Every 2 blocks (60 mins) = hourRate
-        const hours = Math.floor(blocks / 2);
-        // Remainder block = halfHourRate
-        const remainder = blocks % 2;
+            // Every 2 blocks (60 mins) = hourRate
+            const hours = Math.floor(blocks / 2);
+            // Remainder block = halfHourRate
+            const remainder = blocks % 2;
 
-        session.amountCollected = (hours * this.pricingConfig.hourRate) + (remainder * this.pricingConfig.halfHourRate);
+            session.amountCollected = (hours * this.pricingConfig.hourRate) + (remainder * this.pricingConfig.halfHourRate);
+        }
 
         this.currentSessions[index] = session;
         this.saveSessions();
         return session;
+    }
+
+    private calculateCancellationCost(totalMinutes: number): number {
+        let totalCost = 0;
+        let remainingMinutes = totalMinutes;
+        let blockIndex = 1; // 1-based index to track Odd/Even blocks
+
+        while (remainingMinutes > 0) {
+            const currentBlockMinutes = Math.min(remainingMinutes, 30);
+            remainingMinutes -= currentBlockMinutes;
+
+            const isEvenBlock = (blockIndex % 2 === 0);
+            // Odd blocks (1, 3...): Target $50,000 (Base rate)
+            // Even blocks (2, 4...): Target $30,000 (Upgrade to hourly $80k)
+            const targetPrice = isEvenBlock ? 30000 : 50000;
+
+            let blockCost = 0;
+
+            if (currentBlockMinutes <= 5) {
+                // Grace period for this block
+                blockCost = 0;
+            } else if (currentBlockMinutes <= 15) {
+                // Service fee for minor usage of block
+                blockCost = 20000;
+            } else {
+                // > 15 mins: Pay full target price for this block
+                blockCost = targetPrice;
+            }
+
+            totalCost += blockCost;
+            blockIndex++;
+        }
+
+        return totalCost;
     }
 
     getActiveSession(): GameSession | undefined {
@@ -129,6 +170,12 @@ export class AccountingService {
             totalGames: finishedSessions.length,
             sessions: finishedSessions
         };
+    }
+
+    openDay() {
+        this.isDayOpen = true;
+        // Optional: Archive old sessions if they exist from a previous unclosed day?
+        // For now, we keep them as part of the "Current Open Day" bucket.
     }
 
     closeDayAndExport(): void {
@@ -170,9 +217,11 @@ export class AccountingService {
         // Using writeFile from xlsx which tries to use browser download or fs in node logic usually
         XLSX.writeFile(wb, `Cierre_Caja_${summary.date}.xlsx`);
 
-        // 5. Clear Current Sessions (Archive logic could go here)
-        // For now, we clear the array.
+        // 5. Clear Current Sessions & Close Day
         this.currentSessions = [];
         this.saveSessions();
+
+        this.isDayOpen = false;
+        // saveState removed
     }
 }
