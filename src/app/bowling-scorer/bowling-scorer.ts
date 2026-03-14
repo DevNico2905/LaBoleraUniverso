@@ -425,8 +425,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
   
-  timeLimit = 6;
-  timeRemaining = 6 * 60;
+  timeLimit = 30;
+  timeRemaining = 30 * 60;
   isTimerRunning = false;
   gameStarted = false;
   gameFinished = false;
