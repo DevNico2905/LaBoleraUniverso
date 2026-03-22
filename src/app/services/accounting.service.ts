@@ -16,8 +16,8 @@ export class AccountingService {
     // Code mentions USD/COP mixing in my head but I'll stick to generic units.
     // 60 min = 1 hour.
     private pricingConfig: PricingConfig = {
-        halfHourRate: 50000,
-        hourRate: 80000,
+        halfHourRate: 70000,
+        hourRate: 100000,
         currency: 'COP'
     };
 
@@ -97,58 +97,20 @@ export class AccountingService {
             session.totalTimeMinutes = Math.ceil(durationMs / 1000 / 60);
         }
 
-        if (status === 'cancelled') {
-            session.amountCollected = this.calculateCancellationCost(session.totalTimeMinutes);
-        } else {
-            // Standard Completed Game Logic (Block Based)
-            // 1 block = 30 minutes
-            const blocks = Math.ceil(session.totalTimeMinutes / 30);
+        // Standard Game Logic (Block Based) applies to both completed and cancelled games
+        // 1 block = 30 minutes
+        const blocks = Math.ceil(session.totalTimeMinutes / 30);
 
-            // Every 2 blocks (60 mins) = hourRate
-            const hours = Math.floor(blocks / 2);
-            // Remainder block = halfHourRate
-            const remainder = blocks % 2;
+        // Every 2 blocks (60 mins) = hourRate
+        const hours = Math.floor(blocks / 2);
+        // Remainder block = halfHourRate
+        const remainder = blocks % 2;
 
-            session.amountCollected = (hours * this.pricingConfig.hourRate) + (remainder * this.pricingConfig.halfHourRate);
-        }
+        session.amountCollected = (hours * this.pricingConfig.hourRate) + (remainder * this.pricingConfig.halfHourRate);
 
         this.currentSessions[index] = session;
         this.saveSessions();
         return session;
-    }
-
-    private calculateCancellationCost(totalMinutes: number): number {
-        let totalCost = 0;
-        let remainingMinutes = totalMinutes;
-        let blockIndex = 1; // 1-based index to track Odd/Even blocks
-
-        while (remainingMinutes > 0) {
-            const currentBlockMinutes = Math.min(remainingMinutes, 30);
-            remainingMinutes -= currentBlockMinutes;
-
-            const isEvenBlock = (blockIndex % 2 === 0);
-            // Odd blocks (1, 3...): Target $50,000 (Base rate)
-            // Even blocks (2, 4...): Target $30,000 (Upgrade to hourly $80k)
-            const targetPrice = isEvenBlock ? 30000 : 50000;
-
-            let blockCost = 0;
-
-            if (currentBlockMinutes <= 5) {
-                // Grace period for this block
-                blockCost = 0;
-            } else if (currentBlockMinutes <= 15) {
-                // Service fee for minor usage of block
-                blockCost = 20000;
-            } else {
-                // > 15 mins: Pay full target price for this block
-                blockCost = targetPrice;
-            }
-
-            totalCost += blockCost;
-            blockIndex++;
-        }
-
-        return totalCost;
     }
 
     getActiveSession(): GameSession | undefined {

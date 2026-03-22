@@ -363,7 +363,10 @@ interface CompletedGame {
           <div class="text-center text-white">
             <div class="text-6xl mb-4">⚠️</div>
             <h2 class="text-3xl font-bold mb-4">Cancelar Partida</h2>
-            <p class="text-lg mb-6">Ingrese la contraseña del administrador para cancelar el juego en curso</p>
+            <p class="text-md text-yellow-300 font-bold mb-4">
+              Nota Comercial: No hay devolución de dinero. Se cobrará el valor total del tiempo seleccionado ({{ timeLimit }} min).
+            </p>
+            <p class="text-lg mb-6">Ingrese la contraseña del administrador para confirmar la cancelación</p>
 
             <input
               type="password"
@@ -867,18 +870,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   // Helper to calculate billed duration based on timer
   private calculateBilledDuration(): number {
-    // Theoretical time = Initial Time Limit - Remaining Time
-    // timeLimit is in minutes, timeRemaining in seconds
-    const initialSeconds = this.timeLimit * 60;
-    const usedSeconds = initialSeconds - this.timeRemaining;
-
-    // If timeRemaining is 0 (or less), duration is the full time limit
-    if (this.timeRemaining <= 0) {
-      return this.timeLimit;
-    }
-
-    // Otherwise calculate used minutes, rounding up
-    return Math.ceil(usedSeconds / 60);
+    // Se cobra siempre el tiempo total seleccionado originalmente, 
+    // sin importar si canceló antes de tiempo o cuánto tiempo real usó.
+    return this.timeLimit;
   }
 
   finishGame() {
