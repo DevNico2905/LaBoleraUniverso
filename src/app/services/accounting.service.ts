@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { GameSession, DailySummary, PricingConfig } from '../models/accounting.models';
+import { GameSession, DailySummary } from '../models/accounting.models';
 import * as XLSX from 'xlsx';
 
 @Injectable({
@@ -7,26 +7,13 @@ import * as XLSX from 'xlsx';
 })
 export class AccountingService {
     private readonly STORAGE_KEY = 'bowling_daily_sessions';
-    private readonly CONFIG_KEY = 'bowling_pricing_config';
     private readonly STATE_KEY_REMOVED = ''; // Removed
-
-    // Default Config: Adjusted to match reasonable rates.
-    // Assuming Colombia due to language, maybe 50,000 COP/hour?
-    // Let's use a generic value or allow change. 
-    // Code mentions USD/COP mixing in my head but I'll stick to generic units.
-    // 60 min = 1 hour.
-    private pricingConfig: PricingConfig = {
-        halfHourRate: 70000,
-        hourRate: 100000,
-        currency: 'COP'
-    };
 
     private currentSessions: GameSession[] = [];
     public isDayOpen = false;
 
     constructor() {
         this.loadSessions();
-        this.loadConfig();
     }
 
     private loadSessions() {
@@ -48,22 +35,6 @@ export class AccountingService {
         localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.currentSessions));
     }
 
-    private loadConfig() {
-        const config = localStorage.getItem(this.CONFIG_KEY);
-        if (config) {
-            this.pricingConfig = JSON.parse(config);
-        }
-    }
-
-    saveConfig(config: PricingConfig) {
-        this.pricingConfig = config;
-        localStorage.setItem(this.CONFIG_KEY, JSON.stringify(config));
-    }
-
-    getPricing(): PricingConfig {
-        return this.pricingConfig;
-    }
-
     startGame(playerCount: number, laneId: number = 1): string {
         const id = Date.now().toString(); // Simple ID
         const session: GameSession = {
@@ -73,7 +44,6 @@ export class AccountingService {
             laneId, // For now single lane app, but extensible
             playerCount,
             totalTimeMinutes: 0,
-            amountCollected: 0,
             status: 'active'
         };
         this.currentSessions.push(session);
@@ -97,17 +67,6 @@ export class AccountingService {
             session.totalTimeMinutes = Math.ceil(durationMs / 1000 / 60);
         }
 
-        // Standard Game Logic (Block Based) applies to both completed and cancelled games
-        // 1 block = 30 minutes
-        const blocks = Math.ceil(session.totalTimeMinutes / 30);
-
-        // Every 2 blocks (60 mins) = hourRate
-        const hours = Math.floor(blocks / 2);
-        // Remainder block = halfHourRate
-        const remainder = blocks % 2;
-
-        session.amountCollected = (hours * this.pricingConfig.hourRate) + (remainder * this.pricingConfig.halfHourRate);
-
         this.currentSessions[index] = session;
         this.saveSessions();
         return session;
@@ -122,12 +81,10 @@ export class AccountingService {
         const today = new Date().toISOString().split('T')[0];
         const finishedSessions = this.currentSessions.filter(s => s.endTime !== null);
 
-        const totalRevenue = finishedSessions.reduce((acc, curr) => acc + curr.amountCollected, 0);
         const totalTime = finishedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
 
         return {
             date: today,
-            totalRevenue,
             totalTimeMinutes: totalTime,
             totalGames: finishedSessions.length,
             sessions: finishedSessions
@@ -146,7 +103,6 @@ export class AccountingService {
         // 1. Create a Worksheet for Summary
         const summaryData = [
             ['Reporte de Cierre de Caja', summary.date],
-            ['Total Recaudado', summary.totalRevenue],
             ['Tiempo Total (min)', summary.totalTimeMinutes],
             ['Juegos Totales', summary.totalGames],
             [],
@@ -154,13 +110,12 @@ export class AccountingService {
         ];
 
         // 2. Create Header Row for Details
-        const headers = ['ID', 'Inicio', 'Fin', 'Duración (min)', 'Monto', 'Estado'];
+        const headers = ['ID', 'Inicio', 'Fin', 'Duración (min)', 'Estado'];
         const detailsData = summary.sessions.map(s => [
             s.id,
             new Date(s.startTime).toLocaleTimeString(),
             s.endTime ? new Date(s.endTime).toLocaleTimeString() : 'N/A',
             s.totalTimeMinutes,
-            s.amountCollected,
             s.status === 'completed' ? '✅ Juego finalizado con éxito' : '❌ Juego no finalizado / Cancelado'
         ]);
 
@@ -189,7 +144,6 @@ export class AccountingService {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     date: summary.date,
-                    totalRevenue: summary.totalRevenue,
                     totalGames: summary.totalGames,
                     filename: fileName,
                     excelBase64: excelBase64

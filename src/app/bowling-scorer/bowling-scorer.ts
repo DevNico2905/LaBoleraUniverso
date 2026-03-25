@@ -363,9 +363,6 @@ interface CompletedGame {
           <div class="text-center text-white">
             <div class="text-6xl mb-4">⚠️</div>
             <h2 class="text-3xl font-bold mb-4">Cancelar Partida</h2>
-            <p class="text-md text-yellow-300 font-bold mb-4">
-              Nota Comercial: No hay devolución de dinero. Se cobrará el valor total del tiempo seleccionado ({{ timeLimit }} min).
-            </p>
             <p class="text-lg mb-6">Ingrese la contraseña del administrador para confirmar la cancelación</p>
 
             <input

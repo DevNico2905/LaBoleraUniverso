@@ -69,12 +69,7 @@
           <span class="text-lg font-normal opacity-70">{{ dailySummary?.date }}</span>
         </h2>
 
-        <div class="grid grid-cols-3 gap-4 mb-8">
-          <div class="bg-white/10 rounded-xl p-4 text-center">
-            <p class="text-sm opacity-70">Total Recaudado</p>
-            <p class="text-2xl font-bold text-green-400">{{ dailySummary?.totalRevenue |
-              currency:'COP':'symbol-narrow':'1.0-0' }}</p>
-          </div>
+        <div class="grid grid-cols-2 gap-4 mb-8">
           <div class="bg-white/10 rounded-xl p-4 text-center">
             <p class="text-sm opacity-70">Tiempo Total</p>
             <p class="text-2xl font-bold">{{ dailySummary?.totalTimeMinutes }} min</p>
