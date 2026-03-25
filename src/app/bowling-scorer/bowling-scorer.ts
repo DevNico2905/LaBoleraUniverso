@@ -440,6 +440,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   timeLimit = 30;
   timeRemaining = 30 * 60;
   isTimerRunning = false;
+  private targetEndTime: number | null = null;
   gameStarted = false;
   gameFinished = false;
   stopPending = false;
@@ -511,29 +512,34 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   startTimer() {
     this.timerInterval = setInterval(() => {
-      if (this.isTimerRunning && this.timeRemaining > 0) {
-        this.timeRemaining--;
+      if (this.isTimerRunning && this.targetEndTime !== null && this.timeRemaining > 0) {
+        const now = Date.now();
+        const diffSeconds = Math.max(0, Math.ceil((this.targetEndTime - now) / 1000));
 
-        // Alertas de tiempo (sin cambios)
-        if (this.timeRemaining === 900 && !this.alertedAt15) {
-          this.alertedAt15 = true;
-          this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
-          this.showTimeWarning = true;
-        }
+        if (this.timeRemaining !== diffSeconds) {
+          this.timeRemaining = diffSeconds;
 
-        if (this.timeRemaining === 300 && !this.alertedAt5) {
-          this.alertedAt5 = true;
-          this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
-          this.showTimeWarning = true;
-        }
+          // Alertas de tiempo (mejoradas para pestañas inactivas)
+          if (this.timeRemaining <= 900 && !this.alertedAt15) {
+            this.alertedAt15 = true;
+            this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
+            this.showTimeWarning = true;
+          }
 
-        // Cuando el tiempo llega a 0, NO paramos inmediatamente.
-        // Activamos la bandera para terminar al final del frame actual.
-        if (this.timeRemaining === 0) {
-          this.stopPending = true;
+          if (this.timeRemaining <= 300 && !this.alertedAt5) {
+            this.alertedAt5 = true;
+            this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
+            this.showTimeWarning = true;
+          }
+
+          // Cuando el tiempo llega a 0, NO paramos inmediatamente.
+          // Activamos la bandera para terminar al final del frame actual.
+          if (this.timeRemaining === 0) {
+            this.stopPending = true;
+          }
         }
       }
-    }, 1000);
+    }, 500); // Revisión más rápida para actualizar cuando la pestaña vuelve a ser activa
   }
 
   stopTimer() {
@@ -580,6 +586,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.passwordInput === this.correctPassword) {
       this.timeRemaining += 30 * 60;
       this.timeLimit += 30;
+      if (this.targetEndTime !== null) {
+        this.targetEndTime += 30 * 60 * 1000;
+      }
       this.alertedAt15 = false;
       this.alertedAt5 = false;
       this.extraTimeAdded = true;
@@ -877,6 +886,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   finishGame() {
     this.isTimerRunning = false;
+    this.targetEndTime = null;
     this.gameFinished = true;
     this.stopTimer();
 
@@ -908,6 +918,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.currentRoll = 0;
     this.timeRemaining = this.timeLimit * 60;
     this.isTimerRunning = false;
+    this.targetEndTime = null;
     this.gameStarted = false;
     this.gameFinished = false;
     this.stopPending = false;
@@ -932,6 +943,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   startGame() {
     this.gameStarted = true;
     this.isTimerRunning = true;
+    this.targetEndTime = Date.now() + (this.timeRemaining * 1000);
 
     // Accounting Hook
     this.currentSessionId = this.accountingService.startGame(this.players.length);

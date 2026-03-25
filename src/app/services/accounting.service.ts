@@ -175,15 +175,40 @@ export class AccountingService {
         const wb: XLSX.WorkBook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Cierre ' + summary.date);
 
-        // 4. Save File
-        // Using writeFile from xlsx which tries to use browser download or fs in node logic usually
-        XLSX.writeFile(wb, `Cierre_Caja_${summary.date}.xlsx`);
+        // 4. Save File Localmente
+        const fileName = `Cierre_Caja_${summary.date}.xlsx`;
+        XLSX.writeFile(wb, fileName);
 
-        // 5. Clear Current Sessions & Close Day
+        // 5. Enviar por correo vía Vercel API
+        try {
+            const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+
+            // Usa un fire-and-forget para no bloquear el cierre en caso de red lenta
+            fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: summary.date,
+                    totalRevenue: summary.totalRevenue,
+                    totalGames: summary.totalGames,
+                    filename: fileName,
+                    excelBase64: excelBase64
+                })
+            }).then(response => {
+                if (response.ok) {
+                    console.log('✅ Correo de cierre de caja enviado con éxito');
+                } else {
+                    response.json().then(err => console.error('❌ Error API al enviar correo:', err));
+                }
+            }).catch(err => console.error('❌ Error de red enviando correo:', err));
+        } catch (e) {
+            console.error('Error al generar adjunto para envío:', e);
+        }
+
+        // 6. Clear Current Sessions & Close Day
         this.currentSessions = [];
         this.saveSessions();
 
         this.isDayOpen = false;
-        // saveState removed
     }
 }
