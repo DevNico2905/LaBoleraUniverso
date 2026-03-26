@@ -53,14 +53,14 @@ interface CompletedGame {
                 <button
                   (click)="changeTimeLimit(30)"
                   [class]="timeLimit === 30 ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'"
-                  class="px-4 py-2 rounded-lg font-semibold transition"
+                  class="kb-focusable px-4 py-2 rounded-lg font-semibold transition"
                 >
                   30 min
                 </button>
                 <button
                   (click)="changeTimeLimit(60)"
                   [class]="timeLimit === 60 ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'"
-                  class="px-4 py-2 rounded-lg font-semibold transition"
+                  class="kb-focusable px-4 py-2 rounded-lg font-semibold transition"
                 >
                   60 min
                 </button>
@@ -70,7 +70,7 @@ interface CompletedGame {
                 *ngIf="!gameStarted"
                 (click)="resetGame()"
                 [disabled]="!gameFinished && timeRemaining > 0"
-                class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                class="kb-focusable bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                 title="Reiniciar juego"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,7 +82,7 @@ interface CompletedGame {
                 *ngIf="gameStarted && !gameFinished"
                 (click)="editMode = !editMode"
                 [class]="editMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'"
-                class="text-white p-3 rounded-lg transition"
+                class="kb-focusable text-white p-3 rounded-lg transition"
                 [title]="editMode ? 'Guardar cambios' : 'Editar nombres'"
               >
                 <svg *ngIf="!editMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ interface CompletedGame {
               <button
                 *ngIf="gameFinished"
                 (click)="resetGame()"
-                class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition"
+                class="kb-focusable bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition"
                 title="Reiniciar juego"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +117,7 @@ interface CompletedGame {
             <button
               (click)="addPlayer()"
               [disabled]="players.length >= 9"
-              class="bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
+              class="kb-focusable bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -127,7 +127,7 @@ interface CompletedGame {
             <button
               (click)="removePlayer()"
               [disabled]="players.length <= 1"
-              class="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
+              class="kb-focusable bg-red-500 hover:bg-red-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -135,7 +135,7 @@ interface CompletedGame {
             </button>
             <button
               (click)="startGame()"
-              class="ml-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg transition flex items-center gap-2"
+              class="kb-focusable ml-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg transition flex items-center gap-2"
             >
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
@@ -166,7 +166,7 @@ interface CompletedGame {
                       <input *ngIf="!gameStarted || editMode"
                              type="text"
                              [(ngModel)]="player.name"
-                             class="border rounded px-2 py-1 w-full" />
+                             class="kb-focusable border rounded px-2 py-1 w-full" />
                     </td>
                     <td *ngFor="let frame of player.frames; let i = index" 
                         class="p-2 border-l border-gray-200">
@@ -221,7 +221,7 @@ interface CompletedGame {
             <div class="grid grid-cols-11 gap-2 max-w-2xl mx-auto">
               <button *ngFor="let num of [].constructor(getAvailablePins() + 1); let i = index"
                       (click)="recordPins(i)"
-                      class="bg-white text-gray-900 hover:bg-yellow-400 font-bold py-3 px-1 rounded-lg text-lg transition transform hover:scale-105 shadow-lg">
+                      class="kb-focusable bg-white text-gray-900 hover:bg-yellow-400 font-bold py-3 px-1 rounded-lg text-lg transition transform hover:scale-105 shadow-lg">
                 {{ i }}
               </button>
             </div>
@@ -239,7 +239,7 @@ interface CompletedGame {
             <div *ngIf="timeRemaining > 300" class="flex justify-center">
               <button 
                 (click)="closeTimeWarning()"
-                class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
                 Entendido
               </button>
             </div>
@@ -247,13 +247,13 @@ interface CompletedGame {
             <div *ngIf="timeRemaining <= 300" class="flex gap-4 justify-center">
               <button 
                 (click)="closeTimeWarning()"
-                class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
                 Continuar
               </button>
               <button 
                 *ngIf="!extraTimeAdded"
                 (click)="openPasswordPrompt()"
-                class="bg-green-500 text-white hover:bg-green-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
+                class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
@@ -276,7 +276,7 @@ interface CompletedGame {
               [(ngModel)]="passwordInput"
               (keyup.enter)="validatePassword()"
               placeholder="Contraseña"
-              class="w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold mb-2 border-2 border-white/40 focus:outline-none focus:ring-4 focus:ring-white/40 placeholder:text-white/80"
+              class="kb-focusable w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold mb-2 border-2 border-white/40 focus:outline-none focus:ring-4 focus:ring-white/40 placeholder:text-white/80"
               autofocus
             />
             
@@ -287,12 +287,12 @@ interface CompletedGame {
             <div class="flex gap-4 justify-center mt-6">
               <button 
                 (click)="cancelPasswordPrompt()"
-                class="bg-white/20 text-white hover:bg-white/30 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
+                class="kb-focusable bg-white/20 text-white hover:bg-white/30 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
                 Cancelar
               </button>
               <button 
                 (click)="validatePassword()"
-                class="bg-white text-purple-600 hover:bg-purple-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                class="kb-focusable bg-white text-purple-600 hover:bg-purple-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
                 Confirmar
               </button>
             </div>
@@ -333,7 +333,7 @@ interface CompletedGame {
               <button 
                 (click)="resetGame()"
                 routerLink=""
-                class="bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
+                class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
@@ -349,7 +349,7 @@ interface CompletedGame {
       <button
         *ngIf="gameStarted && !gameFinished"
         (click)="openCancelPrompt()"
-        class="fixed bottom-6 right-6 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl transition transform hover:scale-110 z-40"
+        class="kb-focusable fixed bottom-6 right-6 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl transition transform hover:scale-110 z-40"
         title="Cancelar partida"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -370,7 +370,7 @@ interface CompletedGame {
               [(ngModel)]="cancelPasswordInput"
               (keyup.enter)="validateCancelPassword()"
               placeholder="Contraseña"
-              class="w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold mb-2 border-2 border-white/40 focus:outline-none focus:ring-4 focus:ring-white/40 placeholder:text-white/80"
+              class="kb-focusable w-full px-4 py-3 rounded-xl text-white text-center text-lg font-semibold mb-2 border-2 border-white/40 focus:outline-none focus:ring-4 focus:ring-white/40 placeholder:text-white/80"
               autofocus
             />
 
@@ -386,13 +386,13 @@ interface CompletedGame {
               <button
                 (click)="closeCancelPrompt()"
                 [disabled]="cancelPasswordSuccess"
-                class="bg-white/20 text-white hover:bg-white/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
+                class="kb-focusable bg-white/20 text-white hover:bg-white/30 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
                 Cancelar
               </button>
               <button
                 (click)="validateCancelPassword()"
                 [disabled]="cancelPasswordSuccess"
-                class="bg-white text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                class="kb-focusable bg-white text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
                 Confirmar
               </button>
             </div>

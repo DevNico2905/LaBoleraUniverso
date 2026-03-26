@@ -1,2 +1,16 @@
 /* You can add global styles to this file, and also import other style files */
 @import "tailwindcss";
+
+body {
+  cursor: none !important;
+  pointer-events: none;
+}
+
+.kb-focused {
+  outline: 4px solid #fff;
+  outline-offset: 2px;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.8) !important;
+  transform: scale(1.05);
+  transition: all 0.2s ease;
+  z-index: 50;
+}
