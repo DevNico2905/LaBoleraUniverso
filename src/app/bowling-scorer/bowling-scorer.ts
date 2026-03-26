@@ -149,19 +149,19 @@ interface CompletedGame {
               <table class="w-full">
                 <thead class="bg-linear-to-r from-blue-600 to-purple-600 text-white">
                   <tr>
-                    <th class="p-4 text-left font-bold">Jugador</th>
+                    <th class="p-2 sm:p-3 xl:p-4 text-left font-bold">Jugador</th>
                     <th *ngFor="let _ of [].constructor(10); let i = index" 
-                        class="p-4 text-center font-bold border-l border-white/30">
+                        class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l border-white/30">
                       {{ i + 1 }}
                     </th>
-                    <th class="p-4 text-center font-bold border-l-2 border-white">Juego Actual</th>
-                    <th *ngIf="hasCompletedGames" class="p-4 text-center font-bold border-l border-white/30 bg-green-700">Total Acumulado</th>
+                    <th class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l-2 border-white">Juego Actual</th>
+                    <th *ngIf="hasCompletedGames" class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l border-white/30 bg-green-700">Total Acumulado</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr *ngFor="let player of players; let pIndex = index"
                       [class]="pIndex === currentPlayer ? 'bg-yellow-100 border-b border-gray-200' : 'border-b border-gray-200 hover:bg-gray-50'">
-                    <td class="p-4 font-semibold">
+                    <td class="p-2 sm:p-3 xl:p-4 font-semibold">
                       <span *ngIf="gameStarted && !editMode">{{ player.name }}</span>
                       <input *ngIf="!gameStarted || editMode"
                              type="text"
@@ -169,22 +169,22 @@ interface CompletedGame {
                              class="kb-focusable border rounded px-2 py-1 w-full" />
                     </td>
                     <td *ngFor="let frame of player.frames; let i = index" 
-                        class="p-2 border-l border-gray-200">
+                        class="p-1 sm:p-2 border-l border-gray-200">
                       <div class="flex flex-col items-center">
                         <div class="flex gap-1 mb-1">
                           <!-- Frame 10 tiene 3 casillas -->
                           <ng-container *ngIf="i === 9">
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                            <div class="w-6 sm:w-7 xl:w-8 h-6 sm:h-7 xl:h-8 border border-gray-300 rounded flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                                  [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 0)}"
                                  (click)="editMode && gameStarted && isRollEditable(pIndex, i, 0) ? openScoreEditor(pIndex, i, 0) : null">
                               {{ displayRoll(frame[0], null, true) }}
                             </div>
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                            <div class="w-6 sm:w-7 xl:w-8 h-6 sm:h-7 xl:h-8 border border-gray-300 rounded flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                                  [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 1)}"
                                  (click)="editMode && gameStarted && isRollEditable(pIndex, i, 1) ? openScoreEditor(pIndex, i, 1) : null">
                               {{ displayRoll(frame[1], frame[0], true) }}
                             </div>
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                            <div class="w-6 sm:w-7 xl:w-8 h-6 sm:h-7 xl:h-8 border border-gray-300 rounded flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                                  [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 2)}"
                                  (click)="editMode && gameStarted && isRollEditable(pIndex, i, 2) ? openScoreEditor(pIndex, i, 2) : null">
                               {{ displayRoll(frame[2], frame[1], true) }}
@@ -192,12 +192,12 @@ interface CompletedGame {
                           </ng-container>
                           <!-- Frames 1-9 tienen 2 casillas -->
                           <ng-container *ngIf="i !== 9">
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                            <div class="w-6 sm:w-7 xl:w-8 h-6 sm:h-7 xl:h-8 border border-gray-300 rounded flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                                  [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 0)}"
                                  (click)="editMode && gameStarted && isRollEditable(pIndex, i, 0) ? openScoreEditor(pIndex, i, 0) : null">
                               {{ displayRoll(frame[0], null, false) }}
                             </div>
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                            <div class="w-6 sm:w-7 xl:w-8 h-6 sm:h-7 xl:h-8 border border-gray-300 rounded flex items-center justify-center text-xs sm:text-sm font-bold transition-all"
                                  [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 1)}"
                                  (click)="editMode && gameStarted && isRollEditable(pIndex, i, 1) ? openScoreEditor(pIndex, i, 1) : null">
                               {{ displayRoll(frame[1], frame[0], false) }}
@@ -209,10 +209,10 @@ interface CompletedGame {
                         </div>
                       </div>
                     </td>
-                    <td class="p-4 text-center font-bold text-lg border-l-2 border-gray-300 bg-blue-50">
+                    <td class="p-2 sm:p-3 xl:p-4 text-center font-bold text-base sm:text-lg border-l-2 border-gray-300 bg-blue-50">
                       {{ calculateTotalScore(player.frames) }}
                     </td>
-                    <td *ngIf="hasCompletedGames" class="p-4 text-center font-bold text-lg border-l border-gray-300 bg-green-100">
+                    <td *ngIf="hasCompletedGames" class="p-2 sm:p-3 xl:p-4 text-center font-bold text-base sm:text-lg border-l border-gray-300 bg-green-100">
                       {{ getAccumulatedScore(player) }}
                     </td>
                   </tr>
