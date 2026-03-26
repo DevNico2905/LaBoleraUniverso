@@ -7,10 +7,10 @@
 
 @keyframes idle {
   0%, 100% {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateX(-50%) translateY(-18px) scale(1.05);
+    transform: translateY(-18px) scale(1.05);
   }
 }
 

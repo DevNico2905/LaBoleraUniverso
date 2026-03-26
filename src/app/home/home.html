@@ -1,24 +1,31 @@
 <div class="relative w-screen h-screen">
   <!-- Fondo / imagen principal -->
-  <img src="assets/icons/logo.png" class="w-full h-full object-cover" alt="Fondo" />
+  <img src="assets/icons/logo-2.png" class="w-full h-full object-cover" alt="Fondo" />
 
   <!-- Botón Jugar (Solo si el día está abierto) -->
-  <img *ngIf="accountingService.isDayOpen" routerLink="/game" src="assets/icons/btn-jugar.png" alt="Jugar"
-    class="kb-focusable absolute bottom-110 left-120 -translate-x-1/2 w-62 cursor-pointer animate-idle" />
+  <!-- Puedes ajustar la altura cambiando el valor de 'bottom-[30%]' (ej. 20%, 40%, o en píxeles como bottom-[300px]) -->
+  <div *ngIf="accountingService.isDayOpen" class="absolute bottom-[17%] w-full flex justify-center z-50 pointer-events-none">
+    <img routerLink="/game" src="assets/icons/btn-jugar.png" alt="Jugar"
+      class="kb-focusable w-62 cursor-pointer animate-idle pointer-events-auto" />
+  </div>
 
   <!-- Botón Abrir Caja (Solo si el día está cerrado) -->
-  <button *ngIf="!accountingService.isDayOpen" (click)="openDay()"
-    class="kb-focusable absolute bottom-95 left-85 -translate-x-1/2 bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-12 rounded-2xl text-2xl shadow-[0_0_30px_rgba(34,197,94,0.6)] transition transform hover:scale-105 border-4 border-green-400 z-50 flex flex-col items-center gap-2">
-    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-        d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
-    </svg>
-    ABRIR CAJA
-  </button>
+  <!-- Puedes ajustar la altura cambiando el valor de 'bottom-[30%]' (ej. 20%, 40%, o en píxeles como bottom-[300px]) -->
+  <div *ngIf="!accountingService.isDayOpen" class="absolute bottom-[15%] w-full flex justify-center z-50 pointer-events-none">
+    <button (click)="openDay()"
+      class="kb-focusable bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-12 rounded-2xl text-2xl shadow-[0_0_30px_rgba(34,197,94,0.6)] transition transform hover:scale-105 border-4 border-green-400 flex flex-col items-center gap-2 pointer-events-auto">
+      <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+          d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+      </svg>
+      ABRIR CAJA
+    </button>
+  </div>
 
   <!-- Day Closing FAB (Solo si el día está abierto) -->
+  <!-- Puedes ajustar la altura cambiando el valor de 'bottom-6' (ej. bottom-10, bottom-[50px], bottom-[10%]) -->
   <button *ngIf="accountingService.isDayOpen" (click)="openDayClosing()"
-    class="kb-focusable fixed bottom-6 right-6 bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-2xl transition transform hover:scale-110 z-50"
+    class="kb-focusable fixed bottom-15 right-6 bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-full shadow-2xl transition transform hover:scale-110 z-50"
     title="Cierre de Caja">
     <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
