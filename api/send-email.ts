@@ -4,7 +4,18 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req: any, res: any) {
-  // Solo permitimos POST
+  // CORS Headers para habilitar peticiones desde file:// (Electron) o desde cualquier front
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*'); 
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+  // Si es una petición OPTIONS preflight de CORS, retornamos OK 200 inmediatamente
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // Solo permitimos POST para el envío real
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }

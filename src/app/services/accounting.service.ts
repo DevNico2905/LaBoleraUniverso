@@ -142,8 +142,14 @@ export class AccountingService {
         try {
             const excelBase64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
 
+            // Identificar si estamos corriendo en la app de escritorio (file://)
+            const isDesktop = window.location.protocol === 'file:';
+            // Si es escritorio, usar la URL absoluta; en web, usa la relativa
+            const baseUrl = isDesktop ? 'https://labolerauniverso.nick-bern.com' : '';
+            const fetchUrl = `${baseUrl}/api/send-email`;
+
             // Usa un fire-and-forget para no bloquear el cierre en caso de red lenta
-            fetch('/api/send-email', {
+            fetch(fetchUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
