@@ -174,22 +174,32 @@ interface CompletedGame {
                         <div class="flex gap-1 mb-1">
                           <!-- Frame 10 tiene 3 casillas -->
                           <ng-container *ngIf="i === 9">
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                                 [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 0)}"
+                                 (click)="editMode && gameStarted && isRollEditable(pIndex, i, 0) ? openScoreEditor(pIndex, i, 0) : null">
                               {{ displayRoll(frame[0], null, true) }}
                             </div>
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                                 [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 1)}"
+                                 (click)="editMode && gameStarted && isRollEditable(pIndex, i, 1) ? openScoreEditor(pIndex, i, 1) : null">
                               {{ displayRoll(frame[1], frame[0], true) }}
                             </div>
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                                 [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 2)}"
+                                 (click)="editMode && gameStarted && isRollEditable(pIndex, i, 2) ? openScoreEditor(pIndex, i, 2) : null">
                               {{ displayRoll(frame[2], frame[1], true) }}
                             </div>
                           </ng-container>
                           <!-- Frames 1-9 tienen 2 casillas -->
                           <ng-container *ngIf="i !== 9">
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                                 [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 0)}"
+                                 (click)="editMode && gameStarted && isRollEditable(pIndex, i, 0) ? openScoreEditor(pIndex, i, 0) : null">
                               {{ displayRoll(frame[0], null, false) }}
                             </div>
-                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold">
+                            <div class="w-8 h-8 border border-gray-300 rounded flex items-center justify-center text-sm font-bold transition-all"
+                                 [ngClass]="{'kb-focusable cursor-pointer hover:bg-blue-200 hover:border-blue-500 hover:scale-110 ring-2 ring-blue-400 shadow-md': editMode && gameStarted && isRollEditable(pIndex, i, 1)}"
+                                 (click)="editMode && gameStarted && isRollEditable(pIndex, i, 1) ? openScoreEditor(pIndex, i, 1) : null">
                               {{ displayRoll(frame[1], frame[0], false) }}
                             </div>
                           </ng-container>
@@ -400,6 +410,40 @@ interface CompletedGame {
         </div>
       </div>
 
+      <!-- Modal para editar puntuación -->
+      <div *ngIf="editingScore" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+        <div class="bg-gradient-to-br from-blue-600 to-purple-700 rounded-3xl p-8 max-w-sm w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+          <div class="text-center text-white">
+            <h2 class="text-3xl font-bold mb-2">Editar Tiro</h2>
+            <p class="text-lg mb-6 opacity-90 font-semibold text-yellow-300 shadow-md p-2 bg-black/20 rounded-xl">
+              {{ players[editingScore.pIndex].name }} • Frame {{ editingScore.fIndex + 1 }} • Tiro {{ editingScore.rIndex + 1 }}
+            </p>
+            
+            <div class="grid grid-cols-4 gap-3 mb-6">
+              <button *ngFor="let num of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+                      (click)="saveEditedScore(num)"
+                      [disabled]="!isValidEditScore(num)"
+                      class="kb-focusable score-edit-btn bg-white text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white hover:bg-yellow-400 font-bold py-4 px-1 rounded-xl text-xl transition transform hover:scale-105 shadow-lg">
+                {{ num === 10 ? 'X' : (num === 0 ? '-' : num) }}
+              </button>
+            </div>
+            
+            <div class="flex gap-4 justify-center">
+              <button 
+                (click)="closeScoreEditor()"
+                class="kb-focusable bg-white/20 text-white hover:bg-white/30 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
+                Cancelar
+              </button>
+              <button 
+                (click)="clearEditedScore()"
+                class="kb-focusable bg-red-500 text-white hover:bg-red-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
+                Borrar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Day Closing Modal REMOVED -->
   `,
   styles: [`
@@ -453,6 +497,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   extraTimeAdded = false;
 
   editMode = false;
+  editingScore: { pIndex: number, fIndex: number, rIndex: number } | null = null;
 
   showCancelPrompt = false;
   cancelPasswordInput = '';
@@ -937,6 +982,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.cancelPasswordInput = '';
     this.cancelPasswordError = false;
     this.cancelPasswordSuccess = false;
+    this.editingScore = null;
 
     // Ensure timer restarts if needed (though existing logic stops it)
     this.startTimer();
@@ -1037,6 +1083,107 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         score: this.getAccumulatedScore(player) // Usar score acumulado en lugar del juego actual
       }))
       .sort((a, b) => b.score - a.score);
+  }
+
+  // --- LÓGICA DE EDICIÓN DE TIROS ---
+  isRollEditable(pIndex: number, fIndex: number, rIndex: number): boolean {
+    if (this.gameFinished) return true; // (Optional rule, usually editMode is only false when game is finished)
+    if (fIndex < this.currentFrame) return true;
+    if (fIndex > this.currentFrame) return false;
+
+    // fIndex === this.currentFrame
+    if (pIndex < this.currentPlayer) return true;
+    if (pIndex > this.currentPlayer) return false;
+
+    // pIndex === this.currentPlayer && fIndex === this.currentFrame
+    return rIndex <= this.currentRoll;
+  }
+
+  openScoreEditor(pIndex: number, fIndex: number, rIndex: number) {
+    this.editingScore = { pIndex, fIndex, rIndex };
+    setTimeout(() => {
+      document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+      const buttons = Array.from(document.querySelectorAll('.score-edit-btn')) as HTMLButtonElement[];
+      const firstEnabled = buttons.find(b => !b.disabled);
+      if (firstEnabled) {
+        firstEnabled.classList.add('kb-focused');
+      }
+    }, 50);
+  }
+
+  closeScoreEditor() {
+    this.editingScore = null;
+    setTimeout(() => {
+      document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+    }, 10);
+  }
+
+  clearEditedScore() {
+    if (!this.editingScore) return;
+    const { pIndex, fIndex, rIndex } = this.editingScore;
+    this.players[pIndex].frames[fIndex][rIndex] = null;
+    this.closeScoreEditor();
+  }
+
+  isValidEditScore(pins: number): boolean {
+    if (!this.editingScore) return false;
+    const { pIndex, fIndex, rIndex } = this.editingScore;
+    const frame = this.players[pIndex].frames[fIndex];
+
+    if (fIndex === 9) {
+      if (rIndex === 0) return true;
+      if (rIndex === 1) {
+        if (frame[0] === 10) return true; 
+        if (frame[0] === null) return pins <= 10;
+        return frame[0] + pins <= 10;
+      }
+      if (rIndex === 2) {
+        if (frame[1] === 10) return true;
+        if (frame[1] === null) return pins <= 10;
+        if (frame[0] === 10 && frame[1] !== 10) return frame[1] + pins <= 10;
+        return pins <= 10;
+      }
+    } else {
+      if (rIndex === 0) return true;
+      if (rIndex === 1) {
+        if (frame[0] === 10) return false; 
+        if (frame[0] === null) return pins <= 10;
+        return frame[0] + pins <= 10;
+      }
+    }
+    return true;
+  }
+
+  saveEditedScore(pins: number) {
+    if (!this.editingScore) return;
+    const { pIndex, fIndex, rIndex } = this.editingScore;
+    let frame = [...this.players[pIndex].frames[fIndex]];
+    frame[rIndex] = pins;
+
+    // Ajustes automáticos para frames 1-9
+    if (fIndex < 9) {
+      // Si pusimos strike en el primer tiro, el segundo se anula
+      if (rIndex === 0 && pins === 10) {
+        frame[1] = null;
+      } else if (rIndex === 0 && frame[1] !== null && pins + frame[1] > 10) {
+        // En caso que el nuevo primer tiro + el segundo original supere 10 pines, descartamos el segundo
+        frame[1] = null; 
+      }
+    }
+
+    // Ajustes automáticos para el frame 10
+    if (fIndex === 9) {
+      if (rIndex === 0 && pins + (frame[1] || 0) > 10 && pins !== 10) {
+        frame[1] = null;
+        frame[2] = null;
+      }
+      if (rIndex === 1 && frame[0] === 10 && pins + (frame[2] || 0) > 10 && pins !== 10) {
+        frame[2] = null;
+      }
+    }
+
+    this.players[pIndex].frames[fIndex] = frame;
+    this.closeScoreEditor();
   }
 
   getTotalGamesPlayed(): number {
