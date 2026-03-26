@@ -24,6 +24,7 @@ export class Home {
   openingPasswordError = false;
 
   private readonly correctPassword = 'admin123'; // Hardcoded as requested default
+  isCheckingConnection = false;
 
   constructor(
     public accountingService: AccountingService, // Public to access isDayOpen in template
@@ -59,8 +60,28 @@ export class Home {
     this.showDailyClosing = false;
   }
 
-  processDayClosing() {
+  async checkInternetConnection(): Promise<boolean> {
+    if (!navigator.onLine) return false;
+    try {
+      // Hacer ping rápido sin bloqueos de CORS
+      await fetch('https://1.1.1.1', { mode: 'no-cors', cache: 'no-store' });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async processDayClosing() {
     if (this.closingPasswordInput === this.correctPassword) {
+      this.isCheckingConnection = true;
+      const hasInternet = await this.checkInternetConnection();
+      this.isCheckingConnection = false;
+
+      if (!hasInternet) {
+        alert('Error: No hay conexión a internet. El cierre de caja requiere internet para enviar el reporte por correo.');
+        return;
+      }
+
       this.accountingService.closeDayAndExport();
       this.showDailyClosing = false;
       alert('Cierre de caja realizado y exportado correctamente.');
