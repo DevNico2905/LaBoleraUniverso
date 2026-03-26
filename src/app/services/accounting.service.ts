@@ -51,13 +51,15 @@ export class AccountingService {
         return id;
     }
 
-    endGame(sessionId: string, billedDurationMinutes?: number, status: 'completed' | 'cancelled' = 'completed'): GameSession | null {
+    endGame(sessionId: string, billedDurationMinutes?: number, status: 'completed' | 'cancelled' = 'completed', initialTimeMinutes: number = 0, addedTimeMinutes: number = 0): GameSession | null {
         const index = this.currentSessions.findIndex(s => s.id === sessionId);
         if (index === -1) return null;
 
         const session = this.currentSessions[index];
         session.endTime = Date.now();
         session.status = status;
+        session.initialTimeMinutes = initialTimeMinutes;
+        session.addedTimeMinutes = addedTimeMinutes;
 
         if (billedDurationMinutes !== undefined) {
             session.totalTimeMinutes = billedDurationMinutes;
@@ -110,11 +112,13 @@ export class AccountingService {
         ];
 
         // 2. Create Header Row for Details
-        const headers = ['ID', 'Inicio', 'Fin', 'Duración (min)', 'Estado'];
+        const headers = ['ID', 'Inicio', 'Fin', 'Tiempo Inicial (min)', 'Tiempo Extra (min)', 'Duración Total (min)', 'Estado'];
         const detailsData = summary.sessions.map(s => [
             s.id,
             new Date(s.startTime).toLocaleTimeString(),
             s.endTime ? new Date(s.endTime).toLocaleTimeString() : 'N/A',
+            s.initialTimeMinutes || 0,
+            s.addedTimeMinutes || 0,
             s.totalTimeMinutes,
             s.status === 'completed' ? '✅ Juego finalizado con éxito' : '❌ Juego no finalizado / Cancelado'
         ]);

@@ -434,6 +434,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
+  initialTimeLimit = 30;
+  addedTimeLimit = 0;
   timeLimit = 30;
   timeRemaining = 30 * 60;
   isTimerRunning = false;
@@ -566,7 +568,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       // Accounting Hook: Mark as Cancelled
       if (this.currentSessionId) {
         const billedMinutes = this.calculateBilledDuration();
-        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled');
+        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
         this.currentSessionId = null;
       }
 
@@ -583,6 +585,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.passwordInput === this.correctPassword) {
       this.timeRemaining += 60 * 60;
       this.timeLimit += 60;
+      this.addedTimeLimit += 60;
       if (this.targetEndTime !== null) {
         this.targetEndTime += 60 * 60 * 1000;
       }
@@ -890,7 +893,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // Accounting Hook
     if (this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
-      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed');
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed', this.initialTimeLimit, this.addedTimeLimit);
       this.currentSessionId = null;
     }
   }
@@ -900,7 +903,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // This is a fallback or for development reset.
     if (this.gameStarted && !this.gameFinished && this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
-      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled');
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
       this.currentSessionId = null;
     }
 
@@ -913,6 +916,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.currentPlayer = 0;
     this.currentFrame = 0;
     this.currentRoll = 0;
+    this.timeLimit = this.initialTimeLimit || 30;
+    this.addedTimeLimit = 0;
     this.timeRemaining = this.timeLimit * 60;
     this.isTimerRunning = false;
     this.targetEndTime = null;
@@ -948,6 +953,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   changeTimeLimit(minutes: number) {
     if (!this.gameStarted) {
+      this.initialTimeLimit = minutes;
       this.timeLimit = minutes;
       this.timeRemaining = minutes * 60;
     }
