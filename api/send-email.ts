@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
     const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
     const { data, error } = await resend.emails.send({
-      from: `La Bolera Universo | <${fromEmail}>`,
+      from: `La Bolera Universo <${fromEmail}>`,
       to: toEmails,
       bcc: bccEmails,
       subject: `🎳 Cierre de Caja Bolera - ${date}`,
