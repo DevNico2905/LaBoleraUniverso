@@ -549,7 +549,15 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   handleKeyPress(event: KeyboardEvent) {
     if (!this.gameStarted || this.gameFinished || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
 
-    const num = parseInt(event.key);
+    let num = parseInt(event.key);
+    
+    // Mapear teclas especiales de bolos
+    if (event.key.toLowerCase() === 'x') {
+      num = 10;
+    } else if (event.key === '-') {
+      num = 0;
+    }
+
     if (!isNaN(num) && num >= 0 && num <= this.getAvailablePins()) {
       this.recordPins(num);
     }
