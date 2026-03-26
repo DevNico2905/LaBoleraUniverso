@@ -262,12 +262,22 @@ interface CompletedGame {
                 Continuar
               </button>
               <button 
+                *ngIf="!compensationTimeAdded"
+                (click)="openPasswordPrompt('add5')"
+                class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2"
+                title="Compensar tiempo perdido">
+                <!-- <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg> -->
+                +5 min
+              </button>
+              <button 
                 *ngIf="!extraTimeAdded"
-                (click)="openPasswordPrompt()"
+                (click)="openPasswordPrompt('add60')"
                 class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-                </svg>
+                </svg> -->
                 +60 min
               </button>
             </div>
@@ -279,8 +289,8 @@ interface CompletedGame {
         <div class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-6xl mb-4">🔐</div>
-            <h2 class="text-3xl font-bold mb-4">Contraseña del Administrador</h2>
-            <p class="text-lg mb-6">Ingrese la contraseña para agregar 60 minutos</p>
+            <h2 class="text-3xl font-bold mb-4">{{ pendingPasswordAction === 'add60' ? 'Contraseña del Administrador' : 'Autorización de Compensación' }}</h2>
+            <p class="text-lg mb-6">{{ pendingPasswordAction === 'add60' ? 'Ingrese la contraseña para agregar 60 minutos' : 'Ingrese la contraseña para agregar 5 minutos de compensación' }}</p>
             
             <input 
               type="password"
@@ -496,6 +506,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   correctPassword = 'admin123';
   passwordError = false;
   extraTimeAdded = false;
+  compensationTimeAdded = false;
+  pendingPasswordAction: 'add60' | 'add5' = 'add60';
 
   editMode = false;
   editingScore: { pIndex: number, fIndex: number, rIndex: number } | null = null;
@@ -609,7 +621,13 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   // Métodos de Modales (sin cambios mayores)
   closeTimeWarning() { this.showTimeWarning = false; }
-  openPasswordPrompt() { this.showPasswordPrompt = true; this.passwordInput = ''; this.passwordError = false; }
+
+  openPasswordPrompt(action: 'add60' | 'add5' = 'add60') { 
+    this.pendingPasswordAction = action;
+    this.showPasswordPrompt = true; 
+    this.passwordInput = ''; 
+    this.passwordError = false; 
+  }
   cancelPasswordPrompt() { this.showPasswordPrompt = false; }
 
   openCancelPrompt() { this.showCancelPrompt = true; this.cancelPasswordInput = ''; this.cancelPasswordError = false; }
@@ -637,15 +655,25 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   validatePassword() {
     if (this.passwordInput === this.correctPassword) {
-      this.timeRemaining += 60 * 60;
-      this.timeLimit += 60;
-      this.addedTimeLimit += 60;
-      if (this.targetEndTime !== null) {
-        this.targetEndTime += 60 * 60 * 1000;
+      if (this.pendingPasswordAction === 'add5') {
+        this.timeRemaining += 5 * 60;
+        this.timeLimit += 5;
+        this.addedTimeLimit += 5;
+        if (this.targetEndTime !== null) {
+          this.targetEndTime += 5 * 60 * 1000;
+        }
+        this.compensationTimeAdded = true;
+      } else {
+        this.timeRemaining += 60 * 60;
+        this.timeLimit += 60;
+        this.addedTimeLimit += 60;
+        if (this.targetEndTime !== null) {
+          this.targetEndTime += 60 * 60 * 1000;
+        }
+        this.extraTimeAdded = true;
       }
       this.alertedAt15 = false;
       this.alertedAt5 = false;
-      this.extraTimeAdded = true;
       this.stopPending = false; // Si agregaron tiempo, cancelamos el paro pendiente
       this.showPasswordPrompt = false;
       this.showTimeWarning = false;
@@ -986,6 +1014,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.passwordInput = '';
     this.passwordError = false;
     this.extraTimeAdded = false;
+    this.compensationTimeAdded = false;
     this.editMode = false;
     this.showCancelPrompt = false;
     this.cancelPasswordInput = '';
