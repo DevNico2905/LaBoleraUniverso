@@ -257,7 +257,7 @@ interface CompletedGame {
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
                 </svg>
-                +30 min
+                +60 min
               </button>
             </div>
           </div>
@@ -269,7 +269,7 @@ interface CompletedGame {
           <div class="text-center text-white">
             <div class="text-6xl mb-4">🔐</div>
             <h2 class="text-3xl font-bold mb-4">Contraseña del Administrador</h2>
-            <p class="text-lg mb-6">Ingrese la contraseña para agregar 30 minutos</p>
+            <p class="text-lg mb-6">Ingrese la contraseña para agregar 60 minutos</p>
             
             <input 
               type="password"
@@ -581,10 +581,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   validatePassword() {
     if (this.passwordInput === this.correctPassword) {
-      this.timeRemaining += 30 * 60;
-      this.timeLimit += 30;
+      this.timeRemaining += 60 * 60;
+      this.timeLimit += 60;
       if (this.targetEndTime !== null) {
-        this.targetEndTime += 30 * 60 * 1000;
+        this.targetEndTime += 60 * 60 * 1000;
       }
       this.alertedAt15 = false;
       this.alertedAt5 = false;
