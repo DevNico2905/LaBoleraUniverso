@@ -222,11 +222,11 @@ interface CompletedGame {
             </div>
           </div>
 
-          <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-4 text-white">
+          <!-- <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-4 text-white">
             <div class="text-center mb-2">
-              <!-- <h2 class="text-xl font-bold">
+              <h2 class="text-xl font-bold">
                 {{ players[currentPlayer].name }} - Frame {{ currentFrame + 1 }} - Tiro {{ currentRoll + 1 }}
-              </h2> -->
+              </h2>
               <p class="text-xs mt-1 opacity-90">Usa el teclado (0-9) o haz clic en los botones</p>
             </div>
             <div class="grid grid-cols-11 gap-2 max-w-2xl mx-auto">
@@ -236,7 +236,7 @@ interface CompletedGame {
                 {{ i }}
               </button>
             </div>
-          </div>
+          </div> -->
         </div>
       </div>
 
