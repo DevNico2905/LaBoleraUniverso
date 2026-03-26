@@ -50,13 +50,14 @@ interface CompletedGame {
                 </div>
               </div>
               <div *ngIf="!gameStarted" class="flex gap-2">
-                <button
+                <!-- Opción de 30 minutos comentada temporalmente -->
+                <!-- <button
                   (click)="changeTimeLimit(30)"
                   [class]="timeLimit === 30 ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'"
                   class="kb-focusable px-4 py-2 rounded-lg font-semibold transition"
                 >
                   30 min
-                </button>
+                </button> -->
                 <button
                   (click)="changeTimeLimit(60)"
                   [class]="timeLimit === 60 ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'"
@@ -223,9 +224,9 @@ interface CompletedGame {
 
           <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-4 text-white">
             <div class="text-center mb-2">
-              <h2 class="text-xl font-bold">
+              <!-- <h2 class="text-xl font-bold">
                 {{ players[currentPlayer].name }} - Frame {{ currentFrame + 1 }} - Tiro {{ currentRoll + 1 }}
-              </h2>
+              </h2> -->
               <p class="text-xs mt-1 opacity-90">Usa el teclado (0-9) o haz clic en los botones</p>
             </div>
             <div class="grid grid-cols-11 gap-2 max-w-2xl mx-auto">
@@ -478,10 +479,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
-  initialTimeLimit = 30;
+  initialTimeLimit = 60; // Anteriormente 30
   addedTimeLimit = 0;
-  timeLimit = 30;
-  timeRemaining = 30 * 60;
+  timeLimit = 60; // Anteriormente 30
+  timeRemaining = 60 * 60; // Anteriormente 30 * 60
   isTimerRunning = false;
   private targetEndTime: number | null = null;
   gameStarted = false;
