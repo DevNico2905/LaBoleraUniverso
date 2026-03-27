@@ -155,8 +155,7 @@ interface CompletedGame {
                         class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l border-white/30">
                       {{ i + 1 }}
                     </th>
-                    <th class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l-2 border-white">Juego Actual</th>
-                    <th *ngIf="hasCompletedGames" class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l border-white/30 bg-green-700">Total Acumulado</th>
+                    <th class="p-2 sm:p-3 xl:p-4 text-center font-bold border-l-2 border-white bg-green-700">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -205,15 +204,12 @@ interface CompletedGame {
                             </div>
                           </ng-container>
                         </div>
-                        <div class="text-xs font-semibold text-blue-600">
+                        <div class="text-xs font-semibold text-black">
                            {{ getFrameScoreForDisplay(player, i) }}
                         </div>
                       </div>
                     </td>
-                    <td class="p-2 sm:p-3 xl:p-4 text-center font-bold text-base sm:text-lg border-l-2 border-gray-300 bg-blue-50">
-                      {{ calculateTotalScore(player.frames) }}
-                    </td>
-                    <td *ngIf="hasCompletedGames" class="p-2 sm:p-3 xl:p-4 text-center font-bold text-base sm:text-lg border-l border-gray-300 bg-green-100">
+                    <td class="p-2 sm:p-3 xl:p-4 text-center font-bold text-base sm:text-lg border-l-2 border-gray-300 bg-green-100">
                       {{ getAccumulatedScore(player) }}
                     </td>
                   </tr>
