@@ -541,6 +541,14 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.stopTimer();
   }
 
+  // Permite al Router saber si se puede salir de la ruta o no
+  canDeactivate(): boolean {
+    if (this.gameStarted && !this.gameFinished) {
+      return confirm('Hay un juego en curso. ¿Estas seguro de retroceder y salir de la partida? Si lo haces el progreso se perderá.');
+    }
+    return true;
+  }
+
   // Crea 10 frames: 9 con 2 casillas y el último con 3
   private createInitialFrames(): (number | null)[][] {
     const frames: (number | null)[][] = [];
