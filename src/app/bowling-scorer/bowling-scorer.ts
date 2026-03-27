@@ -557,17 +557,42 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return frames;
   }
 
+  @HostListener('window:beforeunload', ['$event'])
+  unloadNotification(event: BeforeUnloadEvent) {
+    if (this.gameStarted && !this.gameFinished) {
+      event.preventDefault();
+      event.returnValue = 'Hay un juego en curso. ¿Estás seguro de salir?';
+      return 'Hay un juego en curso. ¿Estás seguro de salir?';
+    }
+    return undefined;
+  }
+
   @HostListener('window:keydown', ['$event'])
   handleKeyPress(event: KeyboardEvent) {
+    // Si el juego está en curso, bloquear F5, Ctrl+R / Cmd+R y Ctrl+W / Cmd+W
+    if (this.gameStarted && !this.gameFinished) {
+      const isF5 = event.key === 'F5' || event.code === 'F5' || event.keyCode === 116;
+      const isReload = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r';
+      const isClose = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'w';
+      
+      if (isF5 || isReload || isClose) {
+        event.preventDefault();
+        event.stopPropagation();
+        event.returnValue = false;
+        return;
+      }
+    }
+
     if (!this.gameStarted || this.gameFinished || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
+
+    // Ignorar comandos con Ctrl, Cmd o Alt (como zoom: ctrl+-, ctrl++)
+    if (event.ctrlKey || event.metaKey || event.altKey) return;
 
     let num = parseInt(event.key);
     
     // Mapear teclas especiales de bolos
     if (event.key.toLowerCase() === 'x') {
       num = 10;
-    } else if (event.key === '-') {
-      num = 0;
     }
 
     if (!isNaN(num) && num >= 0 && num <= this.getAvailablePins()) {

@@ -14,6 +14,15 @@ function createWindow() {
   // Cargar el index.html del build de Angular
   win.loadFile(path.join(__dirname, 'dist/bolera/browser/index.html'));
   
+  // Bloquear recarga y cierre nativo de Electron (F5, Ctrl+R, Cmd+R, Ctrl+W, Cmd+W)
+  win.webContents.on('before-input-event', (event, input) => {
+    const isReloadOrClose = (input.control || input.meta) && (input.key.toLowerCase() === 'r' || input.key.toLowerCase() === 'w');
+    if (input.key === 'F5' || isReloadOrClose) {
+      event.preventDefault();
+      console.log('Acción bloqueada en Electron (F5/Reload/Close)');
+    }
+  });
+
   // Abrir DevTools (opcional, para debug)
   // win.webContents.openDevTools();
 }
