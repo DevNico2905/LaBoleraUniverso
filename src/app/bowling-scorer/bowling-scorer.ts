@@ -30,9 +30,9 @@ interface CompletedGame {
   imports: [CommonModule, FormsModule, RouterLink],
   template: `
       <!-- App Lock Screen REMOVED -->
-      <div class="max-w-[95%] mx-auto mt-5">
-        <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border border-white/20">
-          <div class="flex justify-between items-center mb-8">
+      <div class="max-w-[100%] mx-3 mt-5">
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 border border-white/20">
+          <div class="flex justify-between items-center mb-4">
             <h1 class="text-4xl font-bold text-white flex items-center gap-3">
               🎳 Sistema de Puntuación - Juego #{{ getCurrentGameNumber() }}
             </h1>
@@ -145,7 +145,7 @@ interface CompletedGame {
             </button>
           </div>
 
-          <div class="bg-white rounded-xl overflow-hidden shadow-lg mb-6">
+          <div class="bg-white rounded-xl overflow-hidden shadow-lg mb-4">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead class="bg-linear-to-r from-blue-600 to-purple-600 text-white">
