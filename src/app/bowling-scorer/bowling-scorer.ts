@@ -162,11 +162,12 @@ interface CompletedGame {
                   <tr *ngFor="let player of players; let pIndex = index"
                       [class]="pIndex === currentPlayer ? 'bg-yellow-100 border-b border-gray-200' : 'border-b border-gray-200 hover:bg-gray-50'">
                     <td class="p-2 sm:p-3 xl:p-4 font-semibold">
-                      <span *ngIf="gameStarted && !editMode">{{ player.name }}</span>
+                      <span *ngIf="gameStarted && !editMode">{{ player.name || ('Jugador ' + (pIndex + 1)) }}</span>
                       <input *ngIf="!gameStarted || editMode"
                              type="text"
                              [(ngModel)]="player.name"
-                             class="kb-focusable border rounded px-2 py-1 w-full" />
+                             [placeholder]="'Jugador ' + (pIndex + 1)"
+                             class="kb-focusable border rounded px-2 py-1 w-full placeholder:font-normal placeholder:text-gray-400" />
                     </td>
                     <td *ngFor="let frame of player.frames; let i = index" 
                         class="p-1 sm:p-2 border-l border-gray-200">
@@ -237,18 +238,24 @@ interface CompletedGame {
       </div>
 
       <div *ngIf="showTimeWarning" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-gradient-to-brown from-orange-500 to-red-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+        <div data-modal="time-warning" class="bg-gradient-to-brown from-orange-500 to-red-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-6xl mb-4 animate-pulse">⏰</div>
             <h2 class="text-3xl font-bold mb-4">¡Atención!</h2>
             <p class="text-xl mb-6">{{ timeWarningMessage }}</p>
             
-            <div *ngIf="timeRemaining > 300" class="flex justify-center">
-              <button 
-                (click)="closeTimeWarning()"
-                class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
-                Entendido
-              </button>
+            <div *ngIf="timeRemaining > 300" class="flex flex-col items-center gap-3">
+              <div class="relative w-16 h-16">
+                <svg class="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                  <circle cx="32" cy="32" r="28" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="5"/>
+                  <circle cx="32" cy="32" r="28" fill="none" stroke="white" stroke-width="5"
+                    stroke-dasharray="175.93"
+                    [style.stroke-dashoffset]="175.93 * (1 - warningCountdown / 5)"
+                    style="transition: stroke-dashoffset 1s linear;"/>
+                </svg>
+                <span class="absolute inset-0 flex items-center justify-center text-2xl font-bold text-white">{{ warningCountdown }}</span>
+              </div>
+              <p class="text-sm text-white/80">Cerrando automáticamente...</p>
             </div>
             
             <div *ngIf="timeRemaining <= 300" class="flex gap-4 justify-center">
@@ -282,7 +289,7 @@ interface CompletedGame {
       </div>
 
       <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
-        <div class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+        <div data-modal="password-prompt" class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-6xl mb-4">🔐</div>
             <h2 class="text-3xl font-bold mb-4">{{ pendingPasswordAction === 'add60' ? 'Contraseña del Administrador' : 'Autorización de Compensación' }}</h2>
@@ -376,7 +383,7 @@ interface CompletedGame {
 
       <!-- Modal de cancelar partida -->
       <div *ngIf="showCancelPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
-        <div class="bg-gradient-to-brown from-red-500 to-rose-700 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+        <div data-modal="cancel-prompt" class="bg-gradient-to-brown from-red-500 to-rose-700 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-6xl mb-4">⚠️</div>
             <h2 class="text-3xl font-bold mb-4">Cancelar Partida</h2>
@@ -475,7 +482,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   // Inicializamos con 10 frames (el último con 3 espacios)
   players: Player[] = [{
-    name: 'Jugador 1',
+    name: '',
     frames: this.createInitialFrames(),
     completedGames: [],
     currentGameNumber: 1
@@ -485,10 +492,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
-  initialTimeLimit = 60; // Anteriormente 30
+  initialTimeLimit = 6; // Anteriormente 30
   addedTimeLimit = 0;
-  timeLimit = 60; // Anteriormente 30
-  timeRemaining = 60 * 60; // Anteriormente 30 * 60
+  timeLimit = 6; // Anteriormente 30
+  timeRemaining = 6 * 60; // Anteriormente 30 * 60
   isTimerRunning = false;
   private targetEndTime: number | null = null;
   gameStarted = false;
@@ -497,6 +504,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   showTimeWarning = false;
   timeWarningMessage = '';
+  warningCountdown = 5;
+  private warningCountdownInterval: any = null;
   showPasswordPrompt = false;
   passwordInput = '';
   correctPassword = 'admin123';
@@ -539,6 +548,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.stopTimer();
+    if (this.warningCountdownInterval) {
+      clearInterval(this.warningCountdownInterval);
+    }
   }
 
   // Permite al Router saber si se puede salir de la ruta o no
@@ -618,12 +630,15 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
             this.alertedAt15 = true;
             this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
             this.showTimeWarning = true;
+            this.startWarningCountdown();
+            this.focusModal('[data-modal="time-warning"]');
           }
 
           if (this.timeRemaining <= 300 && !this.alertedAt5) {
             this.alertedAt5 = true;
             this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
             this.showTimeWarning = true;
+            this.focusModal('[data-modal="time-warning"]');
           }
 
           // Cuando el tiempo llega a 0, NO paramos inmediatamente.
@@ -649,17 +664,59 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   }
 
   // Métodos de Modales (sin cambios mayores)
-  closeTimeWarning() { this.showTimeWarning = false; }
+  closeTimeWarning() {
+    this.showTimeWarning = false;
+    if (this.warningCountdownInterval) {
+      clearInterval(this.warningCountdownInterval);
+      this.warningCountdownInterval = null;
+    }
+    this.warningCountdown = 5;
+  }
+
+  startWarningCountdown() {
+    this.warningCountdown = 5;
+    if (this.warningCountdownInterval) {
+      clearInterval(this.warningCountdownInterval);
+    }
+    this.warningCountdownInterval = setInterval(() => {
+      this.warningCountdown--;
+      if (this.warningCountdown <= 0) {
+        this.closeTimeWarning();
+      }
+    }, 1000);
+  }
+
+  /** Mueve el foco al primer elemento kb-focusable dentro del selector del modal dado. */
+  private focusModal(modalSelector: string) {
+    setTimeout(() => {
+      const modal = document.querySelector(modalSelector);
+      if (!modal) return;
+      const focusable = modal.querySelector<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusable) {
+        document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+        focusable.classList.add('kb-focused');
+        focusable.focus();
+      }
+    }, 50);
+  }
 
   openPasswordPrompt(action: 'add60' | 'add5' = 'add60') { 
     this.pendingPasswordAction = action;
     this.showPasswordPrompt = true; 
     this.passwordInput = ''; 
-    this.passwordError = false; 
+    this.passwordError = false;
+    this.focusModal('[data-modal="password-prompt"]');
   }
   cancelPasswordPrompt() { this.showPasswordPrompt = false; }
 
-  openCancelPrompt() { this.showCancelPrompt = true; this.cancelPasswordInput = ''; this.cancelPasswordError = false; }
+  openCancelPrompt() {
+    this.showCancelPrompt = true;
+    this.cancelPasswordInput = '';
+    this.cancelPasswordError = false;
+    this.focusModal('[data-modal="cancel-prompt"]');
+  }
   closeCancelPrompt() { this.showCancelPrompt = false; }
 
   validateCancelPassword() {
@@ -714,7 +771,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   addPlayer() {
     if (this.players.length < 9 && !this.gameStarted) {
       this.players.push({
-        name: `Jugador ${this.players.length + 1}`,
+        name: '',
         frames: this.createInitialFrames(),
         completedGames: [],
         currentGameNumber: 1
@@ -1019,7 +1076,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
 
     this.players = [{
-      name: 'Jugador 1',
+      name: '',
       frames: this.createInitialFrames(),
       completedGames: [],
       currentGameNumber: 1
