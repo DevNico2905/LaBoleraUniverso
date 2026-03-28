@@ -32,24 +32,57 @@ interface CompletedGame {
       <!-- App Lock Screen REMOVED -->
       <div class="max-w-[100%] mx-3 mt-5">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 border border-white/20">
-          <div class="flex justify-between items-center mb-4">
-            <h1 class="text-4xl font-bold text-white flex items-center gap-3">
-              🎳 Sistema de Puntuación - Juego #{{ getCurrentGameNumber() }}
-            </h1>
-            <div class="flex items-center gap-4">
-              <div class="bg-white/20 rounded-xl px-6 py-3">
-                <div class="flex items-center gap-2 text-white">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                  </svg>
-                  <span class="text-3xl font-mono font-bold" [class.text-red-400]="timeRemaining <= 300">
-                    {{ formatTime(timeRemaining) }}
-                  </span>
-                  <span *ngIf="stopPending" class="text-xs bg-red-500 px-2 py-1 rounded ml-2 animate-pulse">ÚLTIMO FRAME</span>
-                </div>
-              </div>
-              <div *ngIf="!gameStarted" class="flex gap-2">
+
+          <!-- Barra única: antes del juego (jugadores + INICIAR + tiempo), durante el juego (solo timer + botones) -->
+          <div class="flex items-center gap-3 mb-4">
+
+            <!-- Sección izquierda: Jugadores (solo antes de iniciar) -->
+            <ng-container *ngIf="!gameStarted">
+              <svg class="w-6 h-6 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              <span class="text-white font-semibold whitespace-nowrap">Jugadores: {{ players.length }}/9</span>
+              <button
+                (click)="addPlayer()"
+                [disabled]="players.length >= 9"
+                class="kb-focusable bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+              <button
+                (click)="removePlayer()"
+                [disabled]="players.length <= 1"
+                class="kb-focusable bg-red-500 hover:bg-red-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </ng-container>
+
+            <!-- Centro: Botón INICIAR JUEGO (solo antes de iniciar) -->
+            <button
+              *ngIf="!gameStarted"
+              (click)="startGame()"
+              class="kb-focusable mx-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg transition flex items-center gap-2 shrink-0"
+            >
+              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+              INICIAR JUEGO
+            </button>
+
+            <!-- Sección derecha: Timer (siempre visible) + opciones de tiempo (solo antes de iniciar) -->
+            <div class="flex items-center gap-3 ml-auto">
+
+              <!-- Opciones de tiempo (solo antes de iniciar) -->
+              <ng-container *ngIf="!gameStarted">
                 <!-- Opción de 30 minutos comentada temporalmente -->
                 <!-- <button
                   (click)="changeTimeLimit(30)"
@@ -65,13 +98,28 @@ interface CompletedGame {
                 >
                   60 min
                 </button>
+              </ng-container>
+
+              <!-- Timer -->
+              <div class="bg-white/20 rounded-xl px-4 py-2">
+                <div class="flex items-center gap-2 text-white">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                  </svg>
+                  <span class="text-2xl font-mono font-bold" [class.text-red-400]="timeRemaining <= 300">
+                    {{ formatTime(timeRemaining) }}
+                  </span>
+                  <span *ngIf="stopPending" class="text-xs bg-red-500 px-2 py-1 rounded ml-2 animate-pulse">ÚLTIMO FRAME</span>
+                </div>
               </div>
 
+              <!-- Botón reset (solo antes de iniciar) -->
               <button
                 *ngIf="!gameStarted"
                 (click)="resetGame()"
                 [disabled]="!gameFinished && timeRemaining > 0"
-                class="kb-focusable bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
+                class="kb-focusable bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
                 title="Reiniciar juego"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,11 +127,13 @@ interface CompletedGame {
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
                 </svg>
               </button>
+
+              <!-- Botón editar nombres (solo durante el juego) -->
               <button
                 *ngIf="gameStarted && !gameFinished"
                 (click)="editMode = !editMode"
                 [class]="editMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'"
-                class="kb-focusable text-white p-3 rounded-lg transition"
+                class="kb-focusable text-white p-2 rounded-lg transition"
                 [title]="editMode ? 'Guardar cambios' : 'Editar nombres'"
               >
                 <svg *ngIf="!editMode" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,6 +143,8 @@ interface CompletedGame {
                   <path d="M5 13l4 4L19 7"></path>
                 </svg>
               </button>
+
+              <!-- Botón reset (juego terminado) -->
               <button
                 *ngIf="gameFinished"
                 (click)="resetGame()"
@@ -104,45 +156,8 @@ interface CompletedGame {
                   <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
                 </svg>
               </button>
-            </div>
-          </div>
 
-          <div *ngIf="!gameStarted" class="mb-6 flex items-center gap-4 bg-white/10 rounded-xl p-4">
-            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-            <span class="text-white font-semibold">Jugadores: {{ players.length }}/9</span>
-            <button
-              (click)="addPlayer()"
-              [disabled]="players.length >= 9"
-              class="kb-focusable bg-green-500 hover:bg-green-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-            <button
-              (click)="removePlayer()"
-              [disabled]="players.length <= 1"
-              class="kb-focusable bg-red-500 hover:bg-red-600 disabled:bg-gray-500 text-white p-2 rounded-lg transition"
-            >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-            </button>
-            <button
-              (click)="startGame()"
-              class="kb-focusable ml-auto bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold text-lg transition flex items-center gap-2"
-            >
-              <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <polygon points="5 3 19 12 5 21 5 3"></polygon>
-              </svg>
-              INICIAR JUEGO
-            </button>
+            </div>
           </div>
 
           <div class="bg-white rounded-xl overflow-hidden shadow-lg mb-4">
