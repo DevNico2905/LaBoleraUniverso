@@ -621,6 +621,29 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       }
     }
 
+    // --- Soporte de teclado para el modal de edición de score ---
+    // Este bloque se evalúa antes del guard de editMode para que funcione
+    // incluso cuando editMode está activo.
+    if (this.editingScore) {
+      // Escape cierra el modal sin guardar
+      if (event.key === 'Escape') {
+        this.closeScoreEditor();
+        return;
+      }
+
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      let num = parseInt(event.key);
+      if (event.key.toLowerCase() === 'x') num = 10;
+
+      // Solo actuar si es un número válido y pasa la validación del tiro
+      if (!isNaN(num) && num >= 0 && num <= 10 && this.isValidEditScore(num)) {
+        event.preventDefault();
+        this.saveEditedScore(num);
+      }
+      return; // No procesar input normal del juego mientras el editor está abierto
+    }
+
     if (!this.gameStarted || this.gameFinished || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
 
     // Ignorar comandos con Ctrl, Cmd o Alt (como zoom: ctrl+-, ctrl++)
