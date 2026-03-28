@@ -1329,7 +1329,55 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
 
     this.players[pIndex].frames[fIndex] = frame;
+
+    // Recalcular currentRoll si la edición afecta al turno actual del jugador activo.
+    // Esto evita que el juego quede esperando un tiro que ya no corresponde
+    // (p.ej. cuando se corrige un "1" por "X" en el primer tiro del frame actual).
+    if (pIndex === this.currentPlayer && fIndex === this.currentFrame) {
+      this.recalculateCurrentRoll();
+    }
+
     this.closeScoreEditor();
+  }
+
+  /** Recalcula currentRoll basándose en el estado real del frame activo. */
+  private recalculateCurrentRoll() {
+    const frame = this.players[this.currentPlayer].frames[this.currentFrame];
+
+    if (this.currentFrame === 9) {
+      // Frame 10: avanzar hasta el primer null, máximo tiro 2
+      if (frame[0] === null) { this.currentRoll = 0; return; }
+      if (frame[1] === null) { this.currentRoll = 1; return; }
+      if (frame[2] === null) {
+        // Solo hay tercer tiro si hubo strike o spare en los dos primeros
+        const needsThird = frame[0] === 10 || (frame[0] !== null && frame[1] !== null && frame[0] + frame[1] === 10);
+        this.currentRoll = needsThird ? 2 : 2; // en frame 10 si roll2 está lleno y no necesita 3ro, moveToNextTurn ya lo gestionó
+      }
+      return;
+    }
+
+    // Frames 1-9
+    if (frame[0] === null) {
+      this.currentRoll = 0;
+    } else if (frame[0] === 10) {
+      // Strike: el frame ya está completo, no hay segundo tiro
+      // Esto significa que el turno de este jugador ya terminó.
+      // moveToNextTurn no se llamará de nuevo automáticamente, así que
+      // simplemente ponemos currentRoll = 0 reflejando que el frame "se completó
+      // implícitamente" y el próximo input irá al siguiente jugador/frame.
+      // Como la UI no tiene botones de input, el siguiente keydown llamará a
+      // recordPins que evalúa currentRoll. Si está en 0 y el frame[0] ya es 10,
+      // debería haber avanzado. Para corregir eso, forzamos moveToNextTurn.
+      this.currentRoll = 0;
+      // El frame ya tiene strike guardado; forzar avance de turno.
+      this.moveToNextTurn();
+    } else if (frame[1] === null) {
+      this.currentRoll = 1;
+    } else {
+      // Ambos tiros llenos (frame abierto o spare completado), turno terminado.
+      this.currentRoll = 0;
+      this.moveToNextTurn();
+    }
   }
 
   getTotalGamesPlayed(): number {
