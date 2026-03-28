@@ -131,7 +131,7 @@ interface CompletedGame {
               <!-- Botón editar nombres (solo durante el juego) -->
               <button
                 *ngIf="gameStarted && !gameFinished"
-                (click)="editMode = !editMode"
+                (click)="toggleEditMode()"
                 [class]="editMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-green-500 hover:bg-green-600'"
                 class="kb-focusable text-white p-2 rounded-lg transition"
                 [title]="editMode ? 'Guardar cambios' : 'Editar nombres'"
@@ -1268,6 +1268,13 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (!this.editingScore) return;
     const { pIndex, fIndex, rIndex } = this.editingScore;
     this.players[pIndex].frames[fIndex][rIndex] = null;
+
+    // Bug 1 fix: recalculate currentRoll if the cleared roll belongs to
+    // the active player/frame, just like saveEditedScore() does.
+    if (pIndex === this.currentPlayer && fIndex === this.currentFrame) {
+      this.recalculateCurrentRoll();
+    }
+
     this.closeScoreEditor();
   }
 
@@ -1351,7 +1358,13 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       if (frame[2] === null) {
         // Solo hay tercer tiro si hubo strike o spare en los dos primeros
         const needsThird = frame[0] === 10 || (frame[0] !== null && frame[1] !== null && frame[0] + frame[1] === 10);
-        this.currentRoll = needsThird ? 2 : 2; // en frame 10 si roll2 está lleno y no necesita 3ro, moveToNextTurn ya lo gestionó
+        if (needsThird) {
+          // Bug 2 fix: solo apuntar al tercer tiro si realmente se necesita
+          this.currentRoll = 2;
+        } else {
+          // Frame abierto completado: avanzar al siguiente turno
+          this.moveToNextTurn();
+        }
       }
       return;
     }
@@ -1378,6 +1391,18 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       this.currentRoll = 0;
       this.moveToNextTurn();
     }
+  }
+
+  /** Bug 4 fix: Encapsula el toggle de editMode para garantizar coherencia de estado.
+   *  Al desactivar, cierra cualquier editor abierto y recalcula el turno activo. */
+  toggleEditMode() {
+    if (this.editMode) {
+      // Saliendo de edit mode: asegurarse de que no quede ningún modal abierto
+      // y que currentRoll refleje el estado real del frame activo.
+      this.closeScoreEditor();
+      this.recalculateCurrentRoll();
+    }
+    this.editMode = !this.editMode;
   }
 
   getTotalGamesPlayed(): number {
