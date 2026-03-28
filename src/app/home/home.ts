@@ -25,11 +25,14 @@ export class Home {
 
   private readonly correctPassword = 'admin123'; // Hardcoded as requested default
   isCheckingConnection = false;
+  laneName = ''; // Nombre o número de la pista
 
   constructor(
     public accountingService: AccountingService, // Public to access isDayOpen in template
     private authService: AuthService
-  ) { }
+  ) { 
+    this.laneName = localStorage.getItem('bowling_lane_name') || '';
+  }
 
   openDay() {
     this.showOpenDayModal = true;
@@ -82,7 +85,9 @@ export class Home {
         return;
       }
 
-      this.accountingService.closeDayAndExport();
+      localStorage.setItem('bowling_lane_name', this.laneName);
+
+      this.accountingService.closeDayAndExport(this.laneName);
       this.showDailyClosing = false;
       alert('Cierre de caja realizado y exportado correctamente.');
       this.dailySummary = null;

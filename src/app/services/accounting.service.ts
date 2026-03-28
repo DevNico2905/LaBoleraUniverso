@@ -99,14 +99,16 @@ export class AccountingService {
         // For now, we keep them as part of the "Current Open Day" bucket.
     }
 
-    closeDayAndExport(): void {
+    closeDayAndExport(laneName: string = ''): void {
         const summary = this.getTodaySummary();
 
         // 1. Create a Worksheet for Summary
+        const reportTitle = laneName ? `Informe - Pista ${laneName}` : 'Informe';
         const summaryData = [
-            ['Reporte de Cierre de Caja', summary.date],
+            [reportTitle, summary.date],
             ['Tiempo Total (min)', summary.totalTimeMinutes],
             ['Juegos Totales', summary.totalGames],
+            ['Pista N°', laneName],
             [],
             ['Detalle de Partidas']
         ];
@@ -132,10 +134,13 @@ export class AccountingService {
 
         // 3. Create Workbook
         const wb: XLSX.WorkBook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'Cierre ' + summary.date);
+        const sheetName = laneName ? `Informe Pista ${laneName}` : `Cierre ${summary.date}`;
+        // Limitar nombre de hoja a 31 chars (límite de Excel)
+        XLSX.utils.book_append_sheet(wb, ws, sheetName.substring(0, 31));
 
         // 4. Save File Localmente
-        const fileName = `Cierre_Caja_${summary.date}.xlsx`;
+        const fileNameNamePart = laneName ? `Pista ${laneName.replace(/[^a-z0-9]/gi, '_')}` : 'Caja';
+        const fileName = `Informe ${fileNameNamePart} ${summary.date}.xlsx`;
         XLSX.writeFile(wb, fileName);
 
         // 5. Enviar por correo vía Vercel API
@@ -156,6 +161,7 @@ export class AccountingService {
                     date: summary.date,
                     totalGames: summary.totalGames,
                     filename: fileName,
+                    laneName: laneName, // Pasamos el nombre de la pista a la API
                     excelBase64: excelBase64
                 })
             }).then(response => {

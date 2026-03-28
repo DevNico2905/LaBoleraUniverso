@@ -21,14 +21,14 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { date, totalGames, excelBase64, filename } = req.body;
+    const { date, totalGames, excelBase64, filename, laneName } = req.body;
 
     if (!excelBase64) {
       return res.status(400).json({ message: 'No Excel file provided' });
     }
 
     // Definimos el nombre del archivo una sola vez para evitar errores de sintaxis en el HTML
-    const finalFilename = filename || `Cierre_Caja_${date}.xlsx`;
+    const finalFilename = filename || (laneName ? `Informe Pista ${laneName} ${date}.xlsx` : `Informe ${date}.xlsx`);
 
     // Separar múltiples correos por coma si existen
     const reportEmailEnv = process.env.REPORT_EMAIL || 'tucorreo@ejemplo.com';
@@ -40,11 +40,13 @@ export default async function handler(req: any, res: any) {
 
     const fromEmail = process.env.FROM_EMAIL || 'onboarding@resend.dev';
 
+    const subjectText = laneName ? `🎳 Informe - Pista ${laneName} - ${date}` : `🎳 Informe - ${date}`;
+
     const { data, error } = await resend.emails.send({
       from: `La Bolera Universo <${fromEmail}>`,
       to: toEmails,
       bcc: bccEmails,
-      subject: `🎳 Cierre de Caja Bolera - ${date}`,
+      subject: subjectText,
       html: `
 <style>
   @media only screen and (max-width:480px){
@@ -64,8 +66,8 @@ export default async function handler(req: any, res: any) {
           <table cellpadding="0" cellspacing="0" border="0"><tr>
             <td style="font-size:28px;line-height:1;padding-right:14px;">🎳</td>
             <td>
-              <div style="color:#ffffff;font-size:18px;font-weight:600;line-height:1.2;">La Bolera Universo</div>
-              <div style="color:rgba(255,255,255,0.55);font-size:11px;margin-top:3px;letter-spacing:0.07em;text-transform:uppercase;">Reporte de cierre de caja</div>
+              <div style="color:#ffffff;font-size:18px;font-weight:600;line-height:1.2;">La Bolera Universo${laneName ? ` - Pista ${laneName}` : ''}</div>
+              <div style="color:rgba(255,255,255,0.55);font-size:11px;margin-top:3px;letter-spacing:0.07em;text-transform:uppercase;">Informe de cierre de pista</div>
             </td>
           </tr></table>
         </td>

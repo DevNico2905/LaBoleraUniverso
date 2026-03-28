@@ -89,13 +89,20 @@
 
         <div class="mb-6">
           <h3 class="text-xl font-semibold mb-3">Confirmar Cierre</h3>
-          <p class="text-sm opacity-80 mb-4">Ingrese la contraseña de administrador para cerrar la caja y exportar el
+          <p class="text-sm opacity-80 mb-4">Ingrese la pista y su contraseña de administrador para cerrar la caja y exportar el
             Excel.</p>
+            
+          <label class="block text-sm opacity-80 mb-1 ml-1 text-left">Pista a Cargar</label>
+          <input type="text" [(ngModel)]="laneName"
+            placeholder="Ej: Pista 1, VIP, etc."
+            class="kb-focusable w-full px-4 py-3 rounded-xl bg-white/20 text-white border border-white/30 focus:outline-none mb-4" />
+
+          <label class="block text-sm opacity-80 mb-1 ml-1 text-left">Contraseña de Admin</label>
           <input type="password" [(ngModel)]="closingPasswordInput" (keyup.enter)="processDayClosing()"
-            placeholder="Contraseña de Admin"
+            placeholder="Contraseña"
             class="kb-focusable w-full px-4 py-3 rounded-xl bg-white/20 text-white border border-white/30 focus:outline-none mb-2"
             autofocus />
-          <p *ngIf="closingPasswordError" class="text-red-300 font-semibold">Contraseña incorrecta</p>
+          <p *ngIf="closingPasswordError" class="text-red-300 font-semibold mt-1">Contraseña incorrecta</p>
         </div>
 
         <div class="flex justify-end gap-3">
