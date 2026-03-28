@@ -144,6 +144,18 @@ interface CompletedGame {
                 </svg>
               </button>
 
+              <!-- Botón cancelar partida (solo durante el juego) -->
+              <button
+                *ngIf="gameStarted && !gameFinished"
+                (click)="openCancelPrompt()"
+                class="kb-focusable bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition"
+                title="Cancelar partida"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+
               <!-- Botón reset (juego terminado) -->
               <button
                 *ngIf="gameFinished"
@@ -389,17 +401,7 @@ interface CompletedGame {
         </div>
       </div>
 
-      <!-- Botón flotante de cancelar (solo visible cuando el juego está en curso) -->
-      <button
-        *ngIf="gameStarted && !gameFinished"
-        (click)="openCancelPrompt()"
-        class="kb-focusable fixed bottom-6 right-6 bg-red-600 hover:bg-red-700 text-white p-4 rounded-full shadow-2xl transition transform hover:scale-110 z-40"
-        title="Cancelar partida"
-      >
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-        </svg>
-      </button>
+      <!-- Botón flotante de cancelar REMOVIDO - ahora está inline en el header -->
 
       <!-- Modal de cancelar partida -->
       <div *ngIf="showCancelPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
