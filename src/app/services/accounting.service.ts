@@ -82,13 +82,14 @@ export class AccountingService {
     getTodaySummary(): DailySummary {
         const today = new Date().toISOString().split('T')[0];
         const finishedSessions = this.currentSessions.filter(s => s.endTime !== null);
+        const completedSessions = finishedSessions.filter(s => s.status === 'completed');
 
         const totalTime = finishedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
 
         return {
             date: today,
             totalTimeMinutes: totalTime,
-            totalGames: finishedSessions.length,
+            totalGames: completedSessions.length,
             sessions: finishedSessions
         };
     }
