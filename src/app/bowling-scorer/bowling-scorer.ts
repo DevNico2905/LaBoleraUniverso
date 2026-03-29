@@ -28,10 +28,11 @@ interface CompletedGame {
   selector: 'app-bowling-scorer',
   standalone: true,
   imports: [CommonModule, FormsModule, RouterLink],
+  host: { class: 'block h-full' },
   template: `
       <!-- App Lock Screen REMOVED -->
-      <div class="max-w-[100%] mx-3 mt-5">
-        <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 border border-white/20">
+      <div class="h-full flex flex-col p-3">
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 border border-white/20 flex flex-col flex-1 overflow-hidden">
 
           <!-- Barra única: antes del juego (jugadores + INICIAR + tiempo), durante el juego (solo timer + botones) -->
           <div class="flex items-center gap-3 mb-4">
@@ -172,9 +173,9 @@ interface CompletedGame {
             </div>
           </div>
 
-          <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg mb-4">
-            <div class="overflow-x-auto">
-              <table class="w-full border-collapse">
+          <div class="bg-gray-900 rounded-xl overflow-hidden shadow-lg flex-1 flex flex-col">
+            <div class="overflow-auto flex-1">
+              <table class="w-full h-full border-collapse">
                 <thead class="bg-linear-to-r from-blue-600 to-purple-600 text-white">
                   <tr>
                     <th class="p-2 text-left font-bold text-sm">Jugador</th>
@@ -185,10 +186,11 @@ interface CompletedGame {
                     <th class="p-2 text-center font-bold text-sm border-l-2 border-white bg-green-700">Total</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody style="height: 100%">
                   <tr *ngFor="let player of players; let pIndex = index"
+                      [style.height]="(100 / players.length) + '%'"
                       [class]="pIndex === currentPlayer ? 'bg-yellow-500/15 border-b border-gray-700' : 'border-b border-gray-700 hover:bg-gray-800'">
-                    <td class="p-2 font-semibold text-sm text-white">
+                    <td class="p-2 font-semibold text-sm text-white align-middle">
                       <span *ngIf="gameStarted && !editMode">{{ player.name || ('Jugador ' + (pIndex + 1)) }}</span>
                       <input *ngIf="!gameStarted || editMode"
                              type="text"
@@ -198,7 +200,7 @@ interface CompletedGame {
                     </td>
                     <td *ngFor="let frame of player.frames; let i = index"
                         class="border-l border-gray-700 p-0 text-center">
-                      <div class="flex flex-col">
+                      <div class="flex flex-col h-full">
                         <!-- Fila de tiros -->
                         <div class="flex items-center justify-center gap-0.5 px-1 pt-1 pb-0.5 border-b border-gray-700">
                           <!-- Frame 10: 3 tiros -->
@@ -236,12 +238,12 @@ interface CompletedGame {
                           </ng-container>
                         </div>
                         <!-- Score acumulado del frame -->
-                        <div class="text-base font-bold text-white py-1">
+                        <div class="text-base font-bold text-white py-1 flex-1 flex items-center justify-center">
                           {{ getFrameScoreForDisplay(player, i) }}
                         </div>
                       </div>
                     </td>
-                    <td class="p-2 text-center font-bold text-lg border-l-2 border-gray-600 bg-green-900/50 text-green-300">
+                    <td class="p-2 text-center font-bold text-lg border-l-2 border-gray-600 bg-green-900/50 text-green-300 align-middle">
                       {{ getAccumulatedScore(player) }}
                     </td>
                   </tr>
