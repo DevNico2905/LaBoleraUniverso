@@ -202,7 +202,7 @@ interface CompletedGame {
                         class="border-l border-gray-700 p-0 text-center">
                       <div class="flex flex-col h-full">
                         <!-- Fila de tiros -->
-                        <div class="flex items-center justify-center gap-0.5 px-1 pt-1 pb-0.5 border-b border-gray-700">
+                        <div class="flex-[4] flex items-center justify-center gap-0.5 px-1 border-b border-gray-700">
                           <!-- Frame 10: 3 tiros -->
                           <ng-container *ngIf="i === 9">
                             <span class="text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
@@ -238,7 +238,7 @@ interface CompletedGame {
                           </ng-container>
                         </div>
                         <!-- Score acumulado del frame -->
-                        <div class="text-base font-bold text-white py-1 flex-1 flex items-center justify-center">
+                        <div class="flex-[6] text-base font-bold text-white flex items-center justify-center">
                           {{ getFrameScoreForDisplay(player, i) }}
                         </div>
                       </div>
