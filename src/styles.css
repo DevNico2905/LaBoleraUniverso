@@ -11,10 +11,17 @@ body {
 }
 
 .kb-focused {
-  outline: 4px solid #ef4444;
+  outline: 2px solid #ef4444;
   outline-offset: 2px;
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.8) !important;
   transform: scale(1.05);
   transition: all 0.2s ease;
   z-index: 50;
+}
+
+/* Celdas de tiro en modo edición: foco amarillo en lugar de rojo */
+.roll-edit-cell.kb-focused {
+  outline: 4px solid #eab308;
+  outline-offset: 2px;
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.8) !important;
 }

@@ -4,78 +4,78 @@ import { Injectable, OnDestroy } from '@angular/core';
 export class KeyboardNavService implements OnDestroy {
   private currentIndex = -1;
   private boundHandleKeydown = this.handleKeydown.bind(this);
+  private enabled = true;
 
   constructor() {
     document.addEventListener('keydown', this.boundHandleKeydown);
   }
 
-  private handleKeydown(event: KeyboardEvent) {
-    // Refetch elements every keydown to smoothly handle *ngIf DOM changes
-    const allElements = Array.from(document.querySelectorAll('.kb-focusable')) as HTMLElement[];
-    const focusableElements = allElements.filter(el => {
+  setEnabled(enabled: boolean) {
+    this.enabled = enabled;
+    if (!enabled) {
+      document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+      this.currentIndex = -1;
+    }
+  }
+
+  /** Mueve el foco al siguiente elemento kb-focusable (para uso externo). */
+  navigateNext() {
+    this.moveFocus(1);
+  }
+
+  private getFocusableElements(): HTMLElement[] {
+    return (Array.from(document.querySelectorAll('.kb-focusable')) as HTMLElement[]).filter(el => {
       const style = window.getComputedStyle(el);
       return style.display !== 'none' && style.visibility !== 'hidden' && !(el as any).disabled;
     });
+  }
 
+  private moveFocus(delta: number) {
+    const focusableElements = this.getFocusableElements();
     if (focusableElements.length === 0) return;
 
     const activeEl = document.querySelector('.kb-focused') as HTMLElement;
-    let newIndex = this.currentIndex;
+    let newIndex = activeEl ? focusableElements.indexOf(activeEl) : -1;
+    if (newIndex === -1) newIndex = delta > 0 ? 0 : focusableElements.length - 1;
+    else newIndex = (newIndex + delta + focusableElements.length) % focusableElements.length;
 
-    if (activeEl) {
-      newIndex = focusableElements.indexOf(activeEl);
-    }
+    if (activeEl) { activeEl.classList.remove('kb-focused'); activeEl.blur(); }
 
-    if (newIndex === -1) {
-      newIndex = 0;
-    }
+    const nextEl = focusableElements[newIndex];
+    this.currentIndex = newIndex;
+    nextEl.classList.add('kb-focused');
+    nextEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (nextEl.tagName === 'INPUT' || nextEl.tagName === 'TEXTAREA') nextEl.focus();
+  }
 
+  private handleKeydown(event: KeyboardEvent) {
+    if (!this.enabled) return;
+
+    const focusableElements = this.getFocusableElements();
+    if (focusableElements.length === 0) return;
+
+    const activeEl = document.querySelector('.kb-focused') as HTMLElement;
     const t = activeEl?.tagName;
     const isInput = t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT';
 
-    // If an input is focused, allow Left/Right arrows and normal typing/Enter behavior
     if (isInput && (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'Enter')) {
       return;
     }
 
-    let handled = false;
-
     switch (event.key) {
       case 'ArrowDown':
       case 'ArrowRight':
-        newIndex = (newIndex + 1) % focusableElements.length;
-        handled = true;
+        event.preventDefault();
+        this.moveFocus(1);
         break;
       case 'ArrowUp':
       case 'ArrowLeft':
-        newIndex = (newIndex - 1 + focusableElements.length) % focusableElements.length;
-        handled = true;
+        event.preventDefault();
+        this.moveFocus(-1);
         break;
       case 'Enter':
-        if (activeEl && !isInput) {
-          activeEl.click();
-        }
-        handled = true;
+        if (activeEl && !isInput) activeEl.click();
         break;
-    }
-
-    if (handled && event.key !== 'Enter') {
-      event.preventDefault();
-      
-      if (activeEl) {
-        activeEl.classList.remove('kb-focused');
-        activeEl.blur();
-      }
-      
-      const nextEl = focusableElements[newIndex];
-      this.currentIndex = newIndex;
-      nextEl.classList.add('kb-focused');
-      nextEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      
-      // Auto-focus inputs so you can start typing right away
-      if (nextEl.tagName === 'INPUT' || nextEl.tagName === 'TEXTAREA') {
-        nextEl.focus();
-      }
     }
   }
 

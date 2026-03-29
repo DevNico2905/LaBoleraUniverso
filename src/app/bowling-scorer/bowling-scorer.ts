@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { AccountingService } from '../services/accounting.service';
+import { KeyboardNavService } from '../services/keyboard-nav.service';
 import { DailySummary } from '../models/accounting.models';
 
 interface Frame {
@@ -206,33 +207,68 @@ interface CompletedGame {
                         <div class="flex-[4] flex items-center justify-center gap-0.5 px-1 border-b border-gray-700">
                           <!-- Frame 10: 3 tiros -->
                           <ng-container *ngIf="i === 9">
-                            <span class="text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
-                                  [ngClass]="{'kb-focusable cursor-pointer bg-blue-800 ring-1 ring-blue-400 hover:bg-blue-700': editMode && gameStarted && isRollEditable(pIndex, i, 0)}"
+                            <span class="roll-edit-cell text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
+                                  [class.kb-focusable]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.cursor-pointer]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.bg-blue-800]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.ring-1]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.ring-blue-400]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [attr.data-pindex]="editMode ? pIndex : null"
+                                  [attr.data-findex]="editMode ? i : null"
+                                  [attr.data-rindex]="editMode ? 0 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 0) ? openScoreEditor(pIndex, i, 0) : null">
                               {{ displayRoll(frame[0], null, true) }}
                             </span>
                             <span class="text-gray-600 text-xs">|</span>
-                            <span class="text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
-                                  [ngClass]="{'kb-focusable cursor-pointer bg-blue-800 ring-1 ring-blue-400 hover:bg-blue-700': editMode && gameStarted && isRollEditable(pIndex, i, 1)}"
+                            <span class="roll-edit-cell text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
+                                  [class.kb-focusable]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.cursor-pointer]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.bg-blue-800]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.ring-1]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.ring-blue-400]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [attr.data-pindex]="editMode ? pIndex : null"
+                                  [attr.data-findex]="editMode ? i : null"
+                                  [attr.data-rindex]="editMode ? 1 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 1) ? openScoreEditor(pIndex, i, 1) : null">
                               {{ displayRoll(frame[1], frame[0], true) }}
                             </span>
                             <span class="text-gray-600 text-xs">|</span>
-                            <span class="text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
-                                  [ngClass]="{'kb-focusable cursor-pointer bg-blue-800 ring-1 ring-blue-400 hover:bg-blue-700': editMode && gameStarted && isRollEditable(pIndex, i, 2)}"
+                            <span class="roll-edit-cell text-sm font-bold w-5 text-center text-white rounded transition-all leading-5"
+                                  [class.kb-focusable]="editMode && gameStarted && isRollEditable(pIndex, i, 2)"
+                                  [class.cursor-pointer]="editMode && gameStarted && isRollEditable(pIndex, i, 2)"
+                                  [class.bg-blue-800]="editMode && gameStarted && isRollEditable(pIndex, i, 2)"
+                                  [class.ring-1]="editMode && gameStarted && isRollEditable(pIndex, i, 2)"
+                                  [class.ring-blue-400]="editMode && gameStarted && isRollEditable(pIndex, i, 2)"
+                                  [attr.data-pindex]="editMode ? pIndex : null"
+                                  [attr.data-findex]="editMode ? i : null"
+                                  [attr.data-rindex]="editMode ? 2 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 2) ? openScoreEditor(pIndex, i, 2) : null">
                               {{ displayRoll(frame[2], frame[1], true) }}
                             </span>
                           </ng-container>
                           <!-- Frames 1-9: 2 tiros -->
                           <ng-container *ngIf="i !== 9">
-                            <span class="text-sm font-bold w-6 text-center text-white rounded transition-all leading-5"
-                                  [ngClass]="{'kb-focusable cursor-pointer bg-blue-800 ring-1 ring-blue-400 hover:bg-blue-700': editMode && gameStarted && isRollEditable(pIndex, i, 0)}"
+                            <span class="roll-edit-cell text-sm font-bold w-6 text-center text-white rounded transition-all leading-5"
+                                  [class.kb-focusable]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.cursor-pointer]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.bg-blue-800]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.ring-1]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [class.ring-blue-400]="editMode && gameStarted && isRollEditable(pIndex, i, 0)"
+                                  [attr.data-pindex]="editMode ? pIndex : null"
+                                  [attr.data-findex]="editMode ? i : null"
+                                  [attr.data-rindex]="editMode ? 0 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 0) ? openScoreEditor(pIndex, i, 0) : null">
                               {{ displayRoll(frame[0], null, false) }}
                             </span>
-                            <span class="text-sm font-bold w-6 text-center text-white rounded transition-all leading-5"
-                                  [ngClass]="{'kb-focusable cursor-pointer bg-blue-800 ring-1 ring-blue-400 hover:bg-blue-700': editMode && gameStarted && isRollEditable(pIndex, i, 1)}"
+                            <span class="roll-edit-cell text-sm font-bold w-6 text-center text-white rounded transition-all leading-5"
+                                  [class.kb-focusable]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.cursor-pointer]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.bg-blue-800]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.ring-1]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [class.ring-blue-400]="editMode && gameStarted && isRollEditable(pIndex, i, 1)"
+                                  [attr.data-pindex]="editMode ? pIndex : null"
+                                  [attr.data-findex]="editMode ? i : null"
+                                  [attr.data-rindex]="editMode ? 1 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 1) ? openScoreEditor(pIndex, i, 1) : null">
                               {{ displayRoll(frame[1], frame[0], false) }}
                             </span>
@@ -253,6 +289,11 @@ interface CompletedGame {
             </div>
           </div>
 
+
+          <!-- Barra de ayuda para el modo edición inline 
+          <div *ngIf="editMode" class="mt-2 px-3 py-1.5 bg-blue-900/60 rounded-xl text-xs text-white/80 text-center">
+            ← → navegar · 0-9 / X ingresar en celda seleccionada · Delete borrar · Esc salir
+          </div>-->
 
           <!-- <div *ngIf="gameStarted && !gameFinished" class="bg-linear-to-r from-green-500 to-blue-500 rounded-xl p-4 text-white">
             <div class="text-center mb-2">
@@ -449,40 +490,6 @@ interface CompletedGame {
         </div>
       </div>
 
-      <!-- Modal para editar puntuación -->
-      <div *ngIf="editingScore" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
-        <div class="bg-gradient-to-br from-blue-600 to-purple-700 rounded-3xl p-8 max-w-sm w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
-          <div class="text-center text-white">
-            <h2 class="text-3xl font-bold mb-2">Editar Tiro</h2>
-            <p class="text-lg mb-6 opacity-90 font-semibold text-yellow-300 shadow-md p-2 bg-black/20 rounded-xl">
-              {{ players[editingScore.pIndex].name }} • Frame {{ editingScore.fIndex + 1 }} • Tiro {{ editingScore.rIndex + 1 }}
-            </p>
-            
-            <div class="grid grid-cols-4 gap-3 mb-6">
-              <button *ngFor="let num of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
-                      (click)="saveEditedScore(num)"
-                      [disabled]="!isValidEditScore(num)"
-                      class="kb-focusable score-edit-btn bg-white text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white hover:bg-yellow-400 font-bold py-4 px-1 rounded-xl text-xl transition transform hover:scale-105 shadow-lg">
-                {{ num === 10 ? 'X' : (num === 0 ? '-' : num) }}
-              </button>
-            </div>
-            
-            <div class="flex gap-4 justify-center">
-              <button 
-                (click)="closeScoreEditor()"
-                class="kb-focusable bg-white/20 text-white hover:bg-white/30 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105">
-                Cancelar
-              </button>
-              <button 
-                (click)="clearEditedScore()"
-                class="kb-focusable bg-red-500 text-white hover:bg-red-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
-                Borrar
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Day Closing Modal REMOVED -->
   `,
   styles: [`
@@ -517,10 +524,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
-  initialTimeLimit = 1; // Anteriormente 30
+  initialTimeLimit = 60; // Anteriormente 30
   addedTimeLimit = 0;
-  timeLimit = 1; // Anteriormente 30
-  timeRemaining = 1 * 60; // Anteriormente 30 * 60
+  timeLimit = 60; // Anteriormente 30
+  timeRemaining = 60 * 60; // Anteriormente 30 * 60
   isTimerRunning = false;
   private targetEndTime: number | null = null;
   gameStarted = false;
@@ -560,7 +567,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     private router: Router,
     private accountingService: AccountingService,
     private authService: AuthService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private keyboardNavService: KeyboardNavService
   ) { }
 
   ngOnInit() {
@@ -625,27 +633,41 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       }
     }
 
-    // --- Soporte de teclado para el modal de edición de score ---
-    // Este bloque se evalúa antes del guard de editMode para que funcione
-    // incluso cuando editMode está activo.
-    if (this.editingScore) {
-      // Escape cierra el modal sin guardar
+    // --- Modo edición inline (sin modal) ---
+    if (this.editMode) {
+      // Escape: salir del modo edición
       if (event.key === 'Escape') {
-        this.closeScoreEditor();
+        event.preventDefault();
+        this.toggleEditMode();
         return;
       }
 
+      // Las flechas las maneja KeyboardNavService (navega entre celdas, nombres y botón guardar)
+      // Solo interceptamos entrada de datos si hay una celda de tiro enfocada
       if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+      const rollCell = this.getFocusedRollFromDom();
+      if (!rollCell) return;
+
+      // Delete / Backspace: borrar el valor (la celda permanece enfocada)
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        this.editingScore = rollCell;
+        this.clearEditedScore();
+        return;
+      }
 
       let num = parseInt(event.key);
       if (event.key.toLowerCase() === 'x') num = 10;
 
-      // Solo actuar si es un número válido y pasa la validación del tiro
-      if (!isNaN(num) && num >= 0 && num <= 10 && this.isValidEditScore(num)) {
-        event.preventDefault();
-        this.saveEditedScore(num);
+      if (!isNaN(num) && num >= 0 && num <= 10) {
+        this.editingScore = rollCell;
+        if (this.isValidEditScore(num)) {
+          event.preventDefault();
+          this.saveEditedScore(num);
+        }
       }
-      return; // No procesar input normal del juego mientras el editor está abierto
+      return;
     }
 
     if (this.gameFinished) {
@@ -655,7 +677,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.gameStarted || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
+    if (!this.gameStarted || this.showPasswordPrompt || this.showCancelPrompt) return;
 
     // Ignorar comandos con Ctrl, Cmd o Alt (como zoom: ctrl+-, ctrl++)
     if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -1300,6 +1322,14 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   // --- LÓGICA DE EDICIÓN DE TIROS ---
   isRollEditable(pIndex: number, fIndex: number, rIndex: number): boolean {
+    // El tercer tiro del frame 10 sólo existe si hubo strike o spare en los dos primeros
+    if (fIndex === 9 && rIndex === 2) {
+      const frame = this.players[pIndex].frames[9];
+      const hasStrike = frame[0] === 10;
+      const hasSpare = frame[0] !== null && frame[1] !== null && frame[0] !== 10 && frame[0] + frame[1] === 10;
+      if (!hasStrike && !hasSpare) return false;
+    }
+
     if (this.gameFinished) return true; // (Optional rule, usually editMode is only false when game is finished)
     if (fIndex < this.currentFrame) return true;
     if (fIndex > this.currentFrame) return false;
@@ -1314,21 +1344,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   openScoreEditor(pIndex: number, fIndex: number, rIndex: number) {
     this.editingScore = { pIndex, fIndex, rIndex };
-    setTimeout(() => {
-      document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
-      const buttons = Array.from(document.querySelectorAll('.score-edit-btn')) as HTMLButtonElement[];
-      const firstEnabled = buttons.find(b => !b.disabled);
-      if (firstEnabled) {
-        firstEnabled.classList.add('kb-focused');
-      }
-    }, 50);
   }
 
   closeScoreEditor() {
     this.editingScore = null;
-    setTimeout(() => {
-      document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
-    }, 10);
   }
 
   clearEditedScore() {
@@ -1336,13 +1355,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     const { pIndex, fIndex, rIndex } = this.editingScore;
     this.players[pIndex].frames[fIndex][rIndex] = null;
 
-    // Bug 1 fix: recalculate currentRoll if the cleared roll belongs to
-    // the active player/frame, just like saveEditedScore() does.
     if (pIndex === this.currentPlayer && fIndex === this.currentFrame) {
       this.recalculateCurrentRoll();
     }
-
-    this.closeScoreEditor();
+    // No cerramos la celda: el usuario puede escribir un nuevo valor inmediatamente
   }
 
   isValidEditScore(pins: number): boolean {
@@ -1393,25 +1409,57 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Ajustes automáticos para el frame 10
     if (fIndex === 9) {
-      if (rIndex === 0 && pins + (frame[1] || 0) > 10 && pins !== 10) {
-        frame[1] = null;
-        frame[2] = null;
+      const r0 = frame[0]; // valor de roll 0 (ya actualizado si rIndex===0)
+      const r2 = frame[2]; // valor de roll 2 original (no cambiado en rIndex 0 o 1)
+
+      if (rIndex === 0) {
+        if (pins !== 10) {
+          const existingR1 = frame[1]; // roll 1 original (no cambiado)
+          if (existingR1 !== null) {
+            if (pins + existingR1 > 10) {
+              // Supera 10 sin ser strike: limpiar r1 y r2
+              frame[1] = null;
+              frame[2] = null;
+            } else if (pins + existingR1 < 10) {
+              // Sin strike ni spare: no hay tercer tiro
+              frame[2] = null;
+            }
+            // pins + existingR1 === 10: spare válido, conservar r2
+          }
+        }
+        // pins === 10 (strike): r1 y r2 quedan sin tocar; el usuario los ajusta si necesita
       }
-      if (rIndex === 1 && frame[0] === 10 && pins + (frame[2] || 0) > 10 && pins !== 10) {
-        frame[2] = null;
+
+      if (rIndex === 1) {
+        if (r0 !== 10) {
+          // Primer tiro no fue strike
+          if (r0 !== null && r0 + pins < 10) {
+            // Sin spare: no hay tercer tiro
+            frame[2] = null;
+          }
+          // r0 + pins > 10: isValidEditScore lo previene; no necesitamos limpiar aquí
+          // r0 + pins === 10: spare válido, conservar r2
+        } else {
+          // Primer tiro fue strike
+          if (pins !== 10 && r2 !== null && pins + r2 > 10) {
+            // Segundo no es strike y segundo + tercero superarían 10
+            frame[2] = null;
+          }
+          // pins === 10 (doble strike): cualquier r2 0-10 es válido
+        }
       }
     }
 
     this.players[pIndex].frames[fIndex] = frame;
 
-    // Recalcular currentRoll si la edición afecta al turno actual del jugador activo.
-    // Esto evita que el juego quede esperando un tiro que ya no corresponde
-    // (p.ej. cuando se corrige un "1" por "X" en el primer tiro del frame actual).
     if (pIndex === this.currentPlayer && fIndex === this.currentFrame) {
       this.recalculateCurrentRoll();
     }
 
-    this.closeScoreEditor();
+    // Forzar re-render antes de navegar: recalculateCurrentRoll puede cambiar
+    // qué celdas tienen kb-focusable, y navigateNext consulta el DOM inmediatamente.
+    this.cdr.detectChanges();
+    this.keyboardNavService.navigateNext();
   }
 
   /** Recalcula currentRoll basándose en el estado real del frame activo. */
@@ -1464,12 +1512,21 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
    *  Al desactivar, cierra cualquier editor abierto y recalcula el turno activo. */
   toggleEditMode() {
     if (this.editMode) {
-      // Saliendo de edit mode: asegurarse de que no quede ningún modal abierto
-      // y que currentRoll refleje el estado real del frame activo.
       this.closeScoreEditor();
       this.recalculateCurrentRoll();
     }
     this.editMode = !this.editMode;
+  }
+
+  /** Lee la celda de tiro que tiene el foco visual (.kb-focused) via data-attributes. */
+  private getFocusedRollFromDom(): { pIndex: number, fIndex: number, rIndex: number } | null {
+    const focused = document.querySelector('.kb-focused') as HTMLElement | null;
+    if (!focused || !focused.dataset['pindex']) return null;
+    const pIndex = parseInt(focused.dataset['pindex']!);
+    const fIndex = parseInt(focused.dataset['findex']!);
+    const rIndex = parseInt(focused.dataset['rindex']!);
+    if (isNaN(pIndex) || isNaN(fIndex) || isNaN(rIndex)) return null;
+    return { pIndex, fIndex, rIndex };
   }
 
   getTotalGamesPlayed(): number {
