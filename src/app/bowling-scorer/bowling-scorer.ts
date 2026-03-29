@@ -115,18 +115,16 @@ interface CompletedGame {
                   <span *ngIf="stopPending" class="text-xs bg-red-500 px-2 py-1 rounded ml-2 animate-pulse">ÚLTIMO FRAME</span>
                 </div>
               </div>
-
+              
               <!-- Botón reset (solo antes de iniciar) -->
               <button
                 *ngIf="!gameStarted"
-                (click)="resetGame()"
-                [disabled]="!gameFinished && timeRemaining > 0"
-                class="kb-focusable bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition disabled:bg-gray-400 disabled:cursor-not-allowed"
-                title="Reiniciar juego"
+                (click)="goBack()"
+                class="kb-focusable bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition"
+                title="Regresar"
               >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <polyline points="1 4 1 10 7 10"></polyline>
-                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                 </svg>
               </button>
 
@@ -578,6 +576,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       return;
     }
     this.startTimer();
+  }
+
+  goBack() {
+    this.router.navigate(['']);
   }
 
   ngOnDestroy() {

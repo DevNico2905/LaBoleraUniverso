@@ -13,7 +13,7 @@ body {
 .kb-focused {
   outline: 2px solid #ef4444;
   outline-offset: 2px;
-  box-shadow: 0 0 15px rgba(239, 68, 68, 0.8) !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.8) !important;
   transform: scale(1.05);
   transition: all 0.2s ease;
   z-index: 50;

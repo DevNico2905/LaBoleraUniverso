@@ -5,15 +5,18 @@
   <!-- Botón Jugar (Solo si el día está abierto) -->
   <!-- Puedes ajustar la altura cambiando el valor de 'bottom-[30%]' (ej. 20%, 40%, o en píxeles como bottom-[300px]) -->
   <div *ngIf="accountingService.isDayOpen" class="absolute bottom-[15%] w-full flex justify-center z-50 pointer-events-none">
-    <img routerLink="/game" src="assets/icons/btn-jugar.png" alt="Jugar"
-      class="kb-focusable w-60 cursor-pointer animate-idle pointer-events-auto" />
+      <button (click)="openDay()" routerLink="/game"
+      class="kb-focusable bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 px-14 rounded-2xl text-4xl shadow-[0_0_30px_rgba(34,197,94,0.6)] transition transform hover:scale-105 border-4 border-purple-100 flex items-center gap-2 pointer-events-auto">
+      Jugar
+    </button>
+
   </div>
 
   <!-- Botón Abrir Caja (Solo si el día está cerrado) -->
   <!-- Puedes ajustar la altura cambiando el valor de 'bottom-[30%]' (ej. 20%, 40%, o en píxeles como bottom-[300px]) -->
   <div *ngIf="!accountingService.isDayOpen" class="absolute bottom-[15%] w-full flex justify-center z-50 pointer-events-none">
     <button (click)="openDay()"
-      class="kb-focusable bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-2xl text-xl shadow-[0_0_30px_rgba(34,197,94,0.6)] transition transform hover:scale-105 border-4 border-green-400 flex items-center gap-2 pointer-events-auto">
+      class="kb-focusable bg-blue-400 hover:bg-blue-400 text-white font-bold py-3 px-8 rounded-2xl text-xl shadow-[0_0_30px_rgba(34,197,94,0.6)] transition transform hover:scale-105 border-4 border-blue-100 flex items-center gap-2 pointer-events-auto">
       <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
           d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
