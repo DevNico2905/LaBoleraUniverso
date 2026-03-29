@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -161,7 +161,8 @@ interface CompletedGame {
               <button
                 *ngIf="gameFinished"
                 (click)="resetGame()"
-                class="kb-focusable bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition"
+                class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-lg transition"
+                tabindex="-1"
                 title="Reiniciar juego"
               >
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,24 +359,24 @@ interface CompletedGame {
         </div>
       </div>
 
-      <div *ngIf="gameFinished" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-gradient-to-brown from-yellow-400 via-orange-500 to-red-500 rounded-3xl p-8 max-w-2xl w-full shadow-2xl transform animate-fadeIn">
-          <div class="text-center text-white">
-            <div class="text-7xl mb-6 animate-bounce">🎉🏆🎊</div>
-            <h2 class="text-5xl font-bold mb-6 drop-shadow-lg">¡Tiempo Terminado!</h2>
+      <div *ngIf="gameFinished" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
+        <div data-modal="game-finished" class="bg-gradient-to-brown from-yellow-400 via-orange-500 to-red-500 rounded-3xl p-8 max-w-5xl w-full shadow-2xl transform animate-fadeIn">
+          <div class="text-center text-white"><!-- 
+            <div class="text-7xl mb-6 animate-bounce">🎉🏆🎊</div> -->
+            <h2 class="text-xl font-bold mb-6 drop-shadow-lg">¡Tiempo Terminado!</h2>
             
             <div class="bg-white/20 backdrop-blur rounded-2xl p-6 mb-6 border-2 border-white/30">
-              <p class="text-3xl font-semibold mb-3">{{ getWinnerMessage() }}</p>
-              <p class="text-6xl font-bold drop-shadow-lg">{{ getWinnerScore() }} puntos</p>
-              <p class="text-xl mt-4 opacity-90">Juegos jugados: {{ getTotalGamesPlayed() }}</p>
+              <p class="text-2xl font-semibold mb-3">{{ getWinnerMessage() }}</p>
+              <p class="text-4xl font-bold drop-shadow-lg">{{ getWinnerScore() }} puntos</p>
+              <!-- <p class="text-xl mt-4 opacity-90">Juegos jugados: {{ getTotalGamesPlayed() }}</p> -->
             </div>
 
             <div *ngIf="players.length > 1" class="bg-white/10 backdrop-blur rounded-2xl p-6 mb-6">
               <h3 class="text-2xl font-semibold mb-4 flex items-center justify-center gap-2">
                 📊 Tabla de Posiciones
               </h3>
-              <div class="space-y-3 max-h-64 overflow-y-auto">
-                <div *ngFor="let player of getRankedPlayers(); let i = index" 
+              <div class="grid grid-cols-3 gap-3">
+                <div *ngFor="let player of getRankedPlayers(); let i = index"
                      [class]="i === 0 ? 'bg-yellow-400/30 border-2 border-yellow-300' : 'bg-white/10'"
                      class="rounded-xl p-4 flex justify-between items-center transition hover:bg-white/20">
                   <div class="flex items-center gap-4">
@@ -516,10 +517,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
-  initialTimeLimit = 60; // Anteriormente 30
+  initialTimeLimit = 1; // Anteriormente 30
   addedTimeLimit = 0;
-  timeLimit = 60; // Anteriormente 30
-  timeRemaining = 60 * 60; // Anteriormente 30 * 60
+  timeLimit = 1; // Anteriormente 30
+  timeRemaining = 1 * 60; // Anteriormente 30 * 60
   isTimerRunning = false;
   private targetEndTime: number | null = null;
   gameStarted = false;
@@ -558,7 +559,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   constructor(
     private router: Router,
     private accountingService: AccountingService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -646,7 +648,14 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       return; // No procesar input normal del juego mientras el editor está abierto
     }
 
-    if (!this.gameStarted || this.gameFinished || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
+    if (this.gameFinished) {
+      if (['Tab', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (!this.gameStarted || this.editMode || this.showPasswordPrompt || this.showCancelPrompt) return;
 
     // Ignorar comandos con Ctrl, Cmd o Alt (como zoom: ctrl+-, ctrl++)
     if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -843,7 +852,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
   // --- LÓGICA DE PUNTUACIÓN MODIFICADA PARA JUEGO CLÁSICO CON PARTIDAS MÚLTIPLES ---
 
-  calculateFrameScore(playerFrames: (number | null)[][], frameIndex: number): number | null {
+  calculateFrameScore(playerFrames: (number | null)[][], frameIndex: number, strict = true): number | null {
     const frame = playerFrames[frameIndex];
     if (!frame) return null;
 
@@ -855,18 +864,27 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
       // Strike en primer tiro
       if (roll1 === 10) {
-        if (roll2 === null || roll3 === null) return null;
+        if (roll2 === null || roll3 === null) {
+          if (strict) return null;
+          return roll1 + (roll2 ?? 0) + (roll3 ?? 0);
+        }
         return roll1 + roll2 + roll3;
       }
 
       // Spare en primeros dos tiros
       if (roll2 !== null && roll1 + roll2 === 10) {
-        if (roll3 === null) return null;
+        if (roll3 === null) {
+          if (strict) return null;
+          return roll1 + roll2;
+        }
         return roll1 + roll2 + roll3;
       }
 
       // Sin strike ni spare
-      if (roll2 === null) return null;
+      if (roll2 === null) {
+        if (strict) return null;
+        return roll1;
+      }
       return roll1 + roll2;
     }
 
@@ -878,29 +896,44 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // Strike (10 puntos + siguientes 2 tiros)
     if (roll1 === 10) {
       const nextFrame = playerFrames[frameIndex + 1];
-      if (!nextFrame || nextFrame[0] === null) return null;
+      if (!nextFrame || nextFrame[0] === null) {
+        if (strict) return null;
+        return 10; // Sin bonus balls: contamos solo los pinos derribados
+      }
 
       let score = 10 + nextFrame[0];
 
       // Si siguiente es strike y no es frame 10
       if (nextFrame[0] === 10 && frameIndex + 1 !== 9) {
         const nextNextFrame = playerFrames[frameIndex + 2];
-        if (!nextNextFrame || nextNextFrame[0] === null) return null;
+        if (!nextNextFrame || nextNextFrame[0] === null) {
+          if (strict) return null;
+          return score; // Segundo bonus ball faltante → contamos lo que hay
+        }
         score += nextNextFrame[0];
       } else {
         // Si siguiente es frame 10 o no es strike
-        if (nextFrame[1] === null) return null;
+        if (nextFrame[1] === null) {
+          if (strict) return null;
+          return score; // Segundo bonus ball faltante → contamos lo que hay
+        }
         score += nextFrame[1];
       }
       return score;
     }
 
     // Spare (10 puntos + siguiente 1 tiro)
-    if (roll2 === null) return null;
+    if (roll2 === null) {
+      if (strict) return null;
+      return roll1; // Frame incompleto: contamos solo el primer tiro
+    }
 
     if (roll1 + roll2 === 10) {
       const nextFrame = playerFrames[frameIndex + 1];
-      if (!nextFrame || nextFrame[0] === null) return null;
+      if (!nextFrame || nextFrame[0] === null) {
+        if (strict) return null;
+        return 10; // Sin bonus ball: contamos los 10 pinos derribados
+      }
       return 10 + nextFrame[0];
     }
 
@@ -908,11 +941,11 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return roll1 + roll2;
   }
 
-  calculateTotalScore(playerFrames: (number | null)[][]): number {
+  calculateTotalScore(playerFrames: (number | null)[][], strict = true): number {
     let total = 0;
     // Calculamos puntuación de los 10 frames (0-9)
     for (let i = 0; i < 10; i++) {
-      const frameScore = this.calculateFrameScore(playerFrames, i);
+      const frameScore = this.calculateFrameScore(playerFrames, i, strict);
       if (frameScore !== null) {
         total += frameScore;
       }
@@ -1103,7 +1136,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.isTimerRunning = false;
     this.targetEndTime = null;
     this.gameFinished = true;
+    this.cdr.detectChanges();
     this.stopTimer();
+    this.focusModal('[data-modal="game-finished"]');
 
     // Accounting Hook
     if (this.currentSessionId) {
@@ -1240,7 +1275,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   getWinners(): { name: string; score: number }[] {
     const playersWithScores = this.players.map(player => ({
       name: player.name,
-      score: this.getAccumulatedScore(player) // Usar score acumulado en lugar del juego actual
+      score: this.getFinalScore(player)
     }));
 
     const maxScore = Math.max(...playersWithScores.map(p => p.score));
@@ -1251,9 +1286,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return this.players
       .map(player => ({
         name: player.name,
-        score: this.getAccumulatedScore(player) // Usar score acumulado en lugar del juego actual
+        score: this.getFinalScore(player)
       }))
       .sort((a, b) => b.score - a.score);
+  }
+
+  // Score final: cuenta pinos reales aunque falten bonus balls (para juegos interrumpidos)
+  getFinalScore(player: Player): number {
+    const completedTotal = player.completedGames.reduce((sum, score) => sum + score, 0);
+    const currentGameScore = this.calculateTotalScore(player.frames, false);
+    return completedTotal + currentGameScore;
   }
 
   // --- LÓGICA DE EDICIÓN DE TIROS ---
