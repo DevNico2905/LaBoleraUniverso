@@ -5,6 +5,7 @@ export class KeyboardNavService implements OnDestroy {
   private currentIndex = -1;
   private boundHandleKeydown = this.handleKeydown.bind(this);
   private enabled = true;
+  private scope: string | null = null; // Selector CSS del contenedor activo
 
   constructor() {
     document.addEventListener('keydown', this.boundHandleKeydown);
@@ -18,13 +19,37 @@ export class KeyboardNavService implements OnDestroy {
     }
   }
 
-  /** Mueve el foco al siguiente elemento kb-focusable (para uso externo). */
+  // Restringe la navegación a los elementos dentro del selector dado y foca el primero
+  enterScope(selector: string) {
+    this.scope = selector;
+    document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+    this.currentIndex = -1;
+    // Foca el primer elemento del scope tras el render
+    setTimeout(() => {
+      const elements = this.getFocusableElements();
+      if (elements.length > 0) {
+        elements[0].classList.add('kb-focused');
+        elements[0].focus();
+        this.currentIndex = 0;
+      }
+    }, 50);
+  }
+
+  // Vuelve a la navegación global
+  exitScope() {
+    this.scope = null;
+    document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
+    this.currentIndex = -1;
+  }
+
   navigateNext() {
     this.moveFocus(1);
   }
 
   private getFocusableElements(): HTMLElement[] {
-    return (Array.from(document.querySelectorAll('.kb-focusable')) as HTMLElement[]).filter(el => {
+    const container = this.scope ? document.querySelector(this.scope) : document;
+    if (!container) return [];
+    return (Array.from(container.querySelectorAll('.kb-focusable')) as HTMLElement[]).filter(el => {
       const style = window.getComputedStyle(el);
       return style.display !== 'none' && style.visibility !== 'hidden' && !(el as any).disabled;
     });

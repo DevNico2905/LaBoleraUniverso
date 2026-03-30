@@ -1,0 +1,82 @@
+<div class="min-h-screen flex items-center justify-center bg-gray-900">
+  <div class="bg-gradient-to-br from-purple-900 to-indigo-950 rounded-3xl p-10 w-full max-w-sm shadow-2xl border border-white/20">
+
+    <div class="text-white text-center mb-8">
+      <img src="assets/icons/brand-logo.png" alt="Logo" class="w-20 mx-auto mb-4 rounded-xl" onerror="this.style.display='none'">
+      <h1 class="text-3xl font-bold">La Bolera Universo</h1>
+      <p class="text-white/60 text-sm mt-1">Acceso al sistema de puntuación</p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()">
+
+      @if (!isNewDevice) {
+        <div class="mb-4">
+          <label class="block text-white/80 text-sm mb-2">Correo electrónico</label>
+          <input
+            type="email"
+            [(ngModel)]="email"
+            name="email"
+            placeholder="correo@dominio.com"
+            autocomplete="email"
+            class="kb-focusable w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition placeholder-white/30"
+            required
+            autofocus
+          />
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-white/80 text-sm mb-2">Contraseña</label>
+          <input
+            type="password"
+            [(ngModel)]="password"
+            name="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            class="kb-focusable w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition placeholder-white/30"
+            required
+          />
+        </div>
+      }
+
+      @if (isNewDevice) {
+        <div class="mb-6">
+          <p class="text-white/80 text-sm mb-4 text-center">
+            Este es un dispositivo nuevo. Dale un nombre para identificarlo en el panel de admin.
+          </p>
+          <label class="block text-white/80 text-sm mb-2">Nombre del dispositivo</label>
+          <input
+            type="text"
+            [(ngModel)]="deviceName"
+            name="deviceName"
+            placeholder="Ej: Pista 1, Caja, Recepción..."
+            class="kb-focusable w-full px-4 py-3 rounded-xl bg-white/10 text-white border border-white/20 focus:outline-none focus:border-purple-400 focus:bg-white/15 transition placeholder-white/30"
+            required
+            autofocus
+          />
+        </div>
+      }
+
+      @if (errorMessage) {
+        <div class="mb-4 px-4 py-3 rounded-xl bg-red-500/20 border border-red-400/40 text-red-300 text-sm text-center">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        [disabled]="isLoading || (!isNewDevice && (!email || !password)) || (isNewDevice && !deviceName.trim())"
+        class="kb-focusable w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-lg transition transform hover:scale-105 shadow-lg"
+      >
+        @if (isLoading) {
+          <span>Verificando...</span>
+        } @else if (isNewDevice) {
+          <span>Registrar dispositivo</span>
+        } @else {
+          <span>Iniciar sesión</span>
+        }
+      </button>
+
+    </form>
+
+  </div>
+</div>

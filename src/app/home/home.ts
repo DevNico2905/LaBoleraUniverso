@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AccountingService } from '../services/accounting.service';
 import { AuthService } from '../services/auth.service';
+import { KeyboardNavService } from '../services/keyboard-nav.service';
 import { DailySummary } from '../models/accounting.models';
 
 @Component({
@@ -13,7 +14,7 @@ import { DailySummary } from '../models/accounting.models';
   templateUrl: './home.html',
   styleUrl: './home.css',
 })
-export class Home {
+export class Home implements AfterViewInit {
   showDailyClosing = false;
   closingPasswordInput = '';
   closingPasswordError = false;
@@ -22,32 +23,46 @@ export class Home {
   showOpenDayModal = false;
   openingPasswordInput = '';
   openingPasswordError = false;
+  isVerifyingPassword = false;
 
-  private readonly correctPassword = 'admin123'; // Hardcoded as requested default
   isCheckingConnection = false;
-  laneName = ''; // Nombre o número de la pista
+  laneName = '';
 
   constructor(
-    public accountingService: AccountingService, // Public to access isDayOpen in template
-    private authService: AuthService
-  ) { 
+    public accountingService: AccountingService,
+    private authService: AuthService,
+    private keyboardNav: KeyboardNavService
+  ) {
     this.laneName = localStorage.getItem('bowling_lane_name') || '';
+  }
+
+  ngAfterViewInit() {
+    setTimeout(() => this.keyboardNav.navigateNext(), 50);
   }
 
   openDay() {
     this.showOpenDayModal = true;
     this.openingPasswordInput = '';
     this.openingPasswordError = false;
+    this.keyboardNav.enterScope('#modal-open-day');
   }
 
   closeOpenDayModal() {
     this.showOpenDayModal = false;
+    this.keyboardNav.exitScope();
   }
 
-  processOpenDay() {
-    if (this.openingPasswordInput === this.correctPassword) {
+  async processOpenDay() {
+    if (!this.openingPasswordInput) return;
+
+    this.isVerifyingPassword = true;
+    const isValid = await this.authService.verifyPassword(this.openingPasswordInput);
+    this.isVerifyingPassword = false;
+
+    if (isValid) {
       this.accountingService.openDay();
       this.showOpenDayModal = false;
+      this.keyboardNav.exitScope();
     } else {
       this.openingPasswordError = true;
     }
@@ -57,16 +72,17 @@ export class Home {
     this.showDailyClosing = true;
     this.closingPasswordInput = '';
     this.dailySummary = this.accountingService.getTodaySummary();
+    this.keyboardNav.enterScope('#modal-day-closing');
   }
 
   closeDayClosing() {
     this.showDailyClosing = false;
+    this.keyboardNav.exitScope();
   }
 
   async checkInternetConnection(): Promise<boolean> {
     if (!navigator.onLine) return false;
     try {
-      // Hacer ping rápido sin bloqueos de CORS
       await fetch('https://1.1.1.1', { mode: 'no-cors', cache: 'no-store' });
       return true;
     } catch (e) {
@@ -75,7 +91,13 @@ export class Home {
   }
 
   async processDayClosing() {
-    if (this.closingPasswordInput === this.correctPassword) {
+    if (!this.closingPasswordInput) return;
+
+    this.isVerifyingPassword = true;
+    const isValid = await this.authService.verifyPassword(this.closingPasswordInput);
+    this.isVerifyingPassword = false;
+
+    if (isValid) {
       this.isCheckingConnection = true;
       const hasInternet = await this.checkInternetConnection();
       this.isCheckingConnection = false;
@@ -86,9 +108,9 @@ export class Home {
       }
 
       localStorage.setItem('bowling_lane_name', this.laneName);
-
       this.accountingService.closeDayAndExport(this.laneName);
       this.showDailyClosing = false;
+      this.keyboardNav.exitScope();
       alert('Cierre de caja realizado y exportado correctamente.');
       this.dailySummary = null;
     } else {

@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { AccountingService } from '../services/accounting.service';
 import { KeyboardNavService } from '../services/keyboard-nav.service';
@@ -28,9 +28,17 @@ interface CompletedGame {
 @Component({
   selector: 'app-bowling-scorer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   host: { class: 'block h-full' },
   template: `
+      @if (redirectMessage) {
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+          <div class="bg-gradient-to-br from-red-700 to-rose-900 rounded-3xl p-8 max-w-sm w-full text-white text-center shadow-2xl border border-white/20">
+            <div class="text-4xl mb-4">🔒</div>
+            <p class="text-xl font-semibold">{{ redirectMessage }}</p>
+          </div>
+        </div>
+      }
       <!-- App Lock Screen REMOVED -->
       <div class="h-full flex flex-col p-3">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 border border-white/20 flex flex-col flex-1 overflow-hidden">
@@ -428,9 +436,8 @@ interface CompletedGame {
             </div>
 
             <div class="flex gap-4 justify-center">
-              <button 
-                (click)="resetGame()"
-                routerLink=""
+              <button
+                (click)="resetAndGoHome()"
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>
@@ -522,10 +529,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   currentFrame = 0;
   currentRoll = 0;
 
-  initialTimeLimit = 60; // Anteriormente 30
+  initialTimeLimit = 6; // Anteriormente 30
   addedTimeLimit = 0;
-  timeLimit = 60; // Anteriormente 30
-  timeRemaining = 60 * 60; // Anteriormente 30 * 60
+  timeLimit = 6; // Anteriormente 30
+  timeRemaining = 6 * 60; // Anteriormente 30 * 60
   isTimerRunning = false;
   private targetEndTime: number | null = null;
   gameStarted = false;
@@ -538,7 +545,6 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   private warningCountdownInterval: any = null;
   showPasswordPrompt = false;
   passwordInput = '';
-  correctPassword = 'admin123';
   passwordError = false;
   extraTimeAdded = false;
   compensationTimeAdded = false;
@@ -569,10 +575,12 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     private keyboardNavService: KeyboardNavService
   ) { }
 
+  redirectMessage = '';
+
   ngOnInit() {
-    // Security Check: Redirect if day is not open
     if (!this.accountingService.isDayOpen) {
-      this.router.navigate(['']);
+      this.redirectMessage = 'La caja no está abierta. Abre la caja antes de iniciar un juego.';
+      setTimeout(() => this.router.navigate(['']), 2500);
       return;
     }
     this.startTimer();
@@ -711,14 +719,14 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
             this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
             this.showTimeWarning = true;
             this.startWarningCountdown();
-            this.focusModal('[data-modal="time-warning"]');
+            this.keyboardNavService.enterScope('[data-modal="time-warning"]');
           }
 
           if (this.timeRemaining <= 300 && !this.alertedAt5) {
             this.alertedAt5 = true;
             this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
             this.showTimeWarning = true;
-            this.focusModal('[data-modal="time-warning"]');
+            this.keyboardNavService.enterScope('[data-modal="time-warning"]');
           }
 
           // Cuando el tiempo llega a 0, NO paramos inmediatamente.
@@ -746,6 +754,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   // Métodos de Modales (sin cambios mayores)
   closeTimeWarning() {
     this.showTimeWarning = false;
+    this.keyboardNavService.exitScope();
     if (this.warningCountdownInterval) {
       clearInterval(this.warningCountdownInterval);
       this.warningCountdownInterval = null;
@@ -766,41 +775,33 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  /** Mueve el foco al primer elemento kb-focusable dentro del selector del modal dado. */
-  private focusModal(modalSelector: string) {
-    setTimeout(() => {
-      const modal = document.querySelector(modalSelector);
-      if (!modal) return;
-      const focusable = modal.querySelector<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusable) {
-        document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
-        focusable.classList.add('kb-focused');
-        focusable.focus();
-      }
-    }, 50);
-  }
 
-  openPasswordPrompt(action: 'add60' | 'add5' = 'add60') { 
+  openPasswordPrompt(action: 'add60' | 'add5' = 'add60') {
     this.pendingPasswordAction = action;
-    this.showPasswordPrompt = true; 
-    this.passwordInput = ''; 
+    this.showPasswordPrompt = true;
+    this.passwordInput = '';
     this.passwordError = false;
-    this.focusModal('[data-modal="password-prompt"]');
+    this.keyboardNavService.enterScope('[data-modal="password-prompt"]');
   }
-  cancelPasswordPrompt() { this.showPasswordPrompt = false; }
+  cancelPasswordPrompt() {
+    this.showPasswordPrompt = false;
+    this.keyboardNavService.exitScope();
+  }
 
   openCancelPrompt() {
     this.showCancelPrompt = true;
     this.cancelPasswordInput = '';
     this.cancelPasswordError = false;
-    this.focusModal('[data-modal="cancel-prompt"]');
+    this.keyboardNavService.enterScope('[data-modal="cancel-prompt"]');
   }
-  closeCancelPrompt() { this.showCancelPrompt = false; }
+  closeCancelPrompt() {
+    this.showCancelPrompt = false;
+    this.keyboardNavService.exitScope();
+  }
 
-  validateCancelPassword() {
-    if (this.cancelPasswordInput === this.correctPassword) {
+  async validateCancelPassword() {
+    const isValid = await this.authService.verifyPassword(this.cancelPasswordInput);
+    if (isValid) {
       this.cancelPasswordSuccess = true;
 
       // Accounting Hook: Mark as Cancelled
@@ -810,6 +811,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         this.currentSessionId = null;
       }
 
+      this.keyboardNavService.exitScope();
       setTimeout(() => {
         this.resetGame();
         this.router.navigate(['']);
@@ -819,8 +821,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
   }
 
-  validatePassword() {
-    if (this.passwordInput === this.correctPassword) {
+  async validatePassword() {
+    const isValid = await this.authService.verifyPassword(this.passwordInput);
+    if (isValid) {
       if (this.pendingPasswordAction === 'add5') {
         this.timeRemaining += 5 * 60;
         this.timeLimit += 5;
@@ -840,9 +843,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       }
       this.alertedAt15 = false;
       this.alertedAt5 = false;
-      this.stopPending = false; // Si agregaron tiempo, cancelamos el paro pendiente
+      this.stopPending = false;
       this.showPasswordPrompt = false;
       this.showTimeWarning = false;
+      this.keyboardNavService.exitScope();
     } else {
       this.passwordError = true;
     }
@@ -1162,7 +1166,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.gameFinished = true;
     this.cdr.detectChanges();
     this.stopTimer();
-    this.focusModal('[data-modal="game-finished"]');
+    this.keyboardNavService.enterScope('[data-modal="game-finished"]');
 
     // Accounting Hook
     if (this.currentSessionId) {
@@ -1214,8 +1218,12 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.cancelPasswordSuccess = false;
     this.editingScore = null;
 
-    // Ensure timer restarts if needed (though existing logic stops it)
-    this.startTimer();
+    this.stopTimer();
+  }
+
+  resetAndGoHome() {
+    this.resetGame();
+    this.router.navigate(['/']);
   }
 
   startGame() {
