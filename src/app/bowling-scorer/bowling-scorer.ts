@@ -370,7 +370,7 @@ interface CompletedGame {
         </div>
       </div>
 
-      <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+      <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
         <div data-modal="password-prompt" class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-6xl mb-4">🔐</div>
@@ -436,6 +436,13 @@ interface CompletedGame {
             </div>
 
             <div class="flex gap-4 justify-center">
+              @if (!compensationTimeAdded) {
+                <button
+                  (click)="openPasswordPrompt('add5')"
+                  class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
+                  +5 min
+                </button>
+              }
               <button
                 (click)="resetAndGoHome()"
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
@@ -591,6 +598,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.keyboardNavService.exitScope();
     this.stopTimer();
     if (this.warningCountdownInterval) {
       clearInterval(this.warningCountdownInterval);
@@ -824,14 +832,20 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   async validatePassword() {
     const isValid = await this.authService.verifyPassword(this.passwordInput);
     if (isValid) {
+      const wasGameFinished = this.gameFinished;
       if (this.pendingPasswordAction === 'add5') {
         this.timeRemaining += 5 * 60;
         this.timeLimit += 5;
         this.addedTimeLimit += 5;
-        if (this.targetEndTime !== null) {
+        this.compensationTimeAdded = true;
+        if (wasGameFinished) {
+          this.gameFinished = false;
+          this.targetEndTime = Date.now() + this.timeRemaining * 1000;
+          this.isTimerRunning = true;
+          this.startTimer();
+        } else if (this.targetEndTime !== null) {
           this.targetEndTime += 5 * 60 * 1000;
         }
-        this.compensationTimeAdded = true;
       } else {
         this.timeRemaining += 60 * 60;
         this.timeLimit += 60;
@@ -841,12 +855,15 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         }
         this.extraTimeAdded = true;
       }
-      this.alertedAt15 = false;
-      this.alertedAt5 = false;
+      this.alertedAt15 = this.timeRemaining <= 900;
+      this.alertedAt5 = this.timeRemaining <= 300;
       this.stopPending = false;
       this.showPasswordPrompt = false;
       this.showTimeWarning = false;
-      this.keyboardNavService.exitScope();
+      this.keyboardNavService.exitScope(); // sale del scope password-prompt
+      if (wasGameFinished) {
+        this.keyboardNavService.exitScope(); // sale del scope game-finished
+      }
     } else {
       this.passwordError = true;
     }

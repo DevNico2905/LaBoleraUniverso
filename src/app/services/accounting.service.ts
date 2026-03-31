@@ -11,6 +11,7 @@ export class AccountingService {
 
     private currentSessions: GameSession[] = [];
     public isDayOpen = false;
+    public isClosingDay = false;
 
     constructor() {
         this.loadSessions();
@@ -36,6 +37,9 @@ export class AccountingService {
     }
 
     startGame(playerCount: number, laneId: number = 1): string {
+        const existing = this.getActiveSession();
+        if (existing) return existing.id;
+
         const id = Date.now().toString(); // Simple ID
         const session: GameSession = {
             id,
@@ -101,6 +105,9 @@ export class AccountingService {
     }
 
     closeDayAndExport(laneName: string = ''): void {
+        if (this.isClosingDay) return;
+        this.isClosingDay = true;
+
         const summary = this.getTodaySummary();
 
         // 1. Create a Worksheet for Summary
@@ -181,5 +188,6 @@ export class AccountingService {
         this.saveSessions();
 
         this.isDayOpen = false;
+        this.isClosingDay = false;
     }
 }
