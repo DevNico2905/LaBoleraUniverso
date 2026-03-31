@@ -125,7 +125,15 @@ export class AuthService {
       .eq('device_token', deviceToken)
       .single();
 
-    if (error || !data || !data.is_active) {
+    // Error de red o DB inesperado — no borrar el token, fallar sin desregistrar el dispositivo
+    if (error && error.code !== 'PGRST116') {
+      this.logging.warn('auth', 'session_restore_failed', { reason: 'device_lookup_error', code: error.code });
+      this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: null });
+      return false;
+    }
+
+    // Dispositivo no encontrado o inactivo — sí borrar el token y cerrar sesión
+    if (!data || !data.is_active) {
       this.logging.warn('auth', 'session_restore_failed', { reason: data && !data.is_active ? 'device_inactive' : 'device_not_found' });
       await this.supabase.auth.signOut();
       localStorage.removeItem(DEVICE_TOKEN_KEY);
