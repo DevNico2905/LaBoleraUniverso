@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase';
 import { AuthService } from '../services/auth.service';
+import { LoggingService } from '../services/logging.service';
 
 interface Device {
   id: string;
@@ -32,7 +33,8 @@ export class Admin implements OnInit {
   constructor(
     private supabaseService: SupabaseService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private logging: LoggingService
   ) {}
 
   private get supabase() {
@@ -105,10 +107,13 @@ export class Admin implements OnInit {
       .update({ device_name: this.editingName.trim() })
       .eq('id', device.id);
 
-    if (!error) {
-      device.device_name = this.editingName.trim();
+    if (error) {
+      this.logging.error('system', 'device_rename_failed', error, { deviceId: device.id });
+      alert(`Error al renombrar dispositivo: ${error.message}`);
+      return;
     }
 
+    device.device_name = this.editingName.trim();
     this.editingId = null;
   }
 
