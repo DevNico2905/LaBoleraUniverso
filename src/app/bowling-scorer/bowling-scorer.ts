@@ -261,7 +261,7 @@ interface CompletedGame {
                                   [attr.data-findex]="editMode ? i : null"
                                   [attr.data-rindex]="editMode ? 2 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 2) ? openScoreEditor(pIndex, i, 2) : null">
-                              {{ displayRoll(frame[2], frame[1], true) }}
+                              {{ displayRoll(frame[2], frame[1], true, frame[0]) }}
                             </span>
                           </ng-container>
                           <!-- Frames 1-9: 2 tiros -->
@@ -1378,13 +1378,19 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return 10 - (frame[0] || 0);
   }
 
-  displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false): string {
+  displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false, prevPrevRoll: number | null = null): string {
     if (roll === null) return '';
 
     // Frame 10: mostrar X, spare (/), guión o número
     if (isFrame10) {
-      if (roll === 10) return 'X';
-      if (previousRoll !== null && previousRoll !== 10 && previousRoll + roll === 10) return '/';
+      // Los pines se resetean antes de este tiro si los dos anteriores fueron spare (ej: 5+5)
+      const pinsWereReset = prevPrevRoll !== null && prevPrevRoll !== 10 && prevPrevRoll + (previousRoll ?? 0) === 10;
+      if (roll === 10) {
+        // "X" si es un strike verdadero: primer tiro, tiro anterior fue strike, o pines reseteados por spare
+        if (previousRoll === null || previousRoll === 10 || pinsWereReset) return 'X';
+        return '/'; // Tumba todos los pines restantes del tiro anterior → spare
+      }
+      if (previousRoll !== null && previousRoll !== 10 && previousRoll + roll === 10 && !pinsWereReset) return '/';
       if (roll === 0) return '-';
       return roll.toString();
     }
