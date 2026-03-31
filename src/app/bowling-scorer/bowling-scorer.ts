@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { AccountingService } from '../services/accounting.service';
 import { KeyboardNavService } from '../services/keyboard-nav.service';
+import { LoggingService } from '../services/logging.service';
 import { DailySummary } from '../models/accounting.models';
 
 interface Frame {
@@ -647,7 +648,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     private accountingService: AccountingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private keyboardNavService: KeyboardNavService
+    private keyboardNavService: KeyboardNavService,
+    private logging: LoggingService
   ) { }
 
   redirectMessage = '';
@@ -796,6 +798,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
             this.showTimeWarning = true;
             this.startWarningCountdown();
             this.keyboardNavService.enterScope('[data-modal="time-warning"]');
+            this.logging.info('game', 'time_warning', { minutesRemaining: 15 });
           }
 
           if (this.timeRemaining <= 300 && !this.alertedAt5) {
@@ -803,11 +806,15 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
             this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
             this.showTimeWarning = true;
             this.keyboardNavService.enterScope('[data-modal="time-warning"]');
+            this.logging.info('game', 'time_warning', { minutesRemaining: 5 });
           }
 
           // Cuando el tiempo llega a 0, NO paramos inmediatamente.
           // Activamos la bandera para terminar al final del frame actual.
           if (this.timeRemaining === 0) {
+            if (!this.stopPending) {
+              this.logging.info('game', 'time_expired', { initialTimeLimit: this.initialTimeLimit, addedTimeLimit: this.addedTimeLimit });
+            }
             this.stopPending = true;
           }
         }
@@ -879,6 +886,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     const isValid = await this.authService.verifyPassword(this.cancelPasswordInput);
     if (isValid) {
       this.cancelPasswordSuccess = true;
+      this.logging.info('game', 'game_cancelled', { playerCount: this.players.length, initialTimeLimit: this.initialTimeLimit, addedTimeLimit: this.addedTimeLimit });
 
       // Accounting Hook: Mark as Cancelled
       if (this.currentSessionId) {
@@ -893,6 +901,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         this.router.navigate(['']);
       }, 1500);
     } else {
+      this.logging.warn('game', 'cancel_password_failed');
       this.cancelPasswordError = true;
     }
   }
@@ -906,6 +915,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         this.timeLimit += 5;
         this.addedTimeLimit += 5;
         this.compensationTimeAdded = true;
+        this.logging.info('game', 'time_extended', { action: 'add5', addedMinutes: 5, totalAddedMinutes: this.addedTimeLimit });
         if (wasGameFinished) {
           this.gameFinished = false;
           this.targetEndTime = Date.now() + this.timeRemaining * 1000;
@@ -922,6 +932,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
           this.targetEndTime += 60 * 60 * 1000;
         }
         this.extraTimeAdded = true;
+        this.logging.info('game', 'time_extended', { action: 'add60', addedMinutes: 60, totalAddedMinutes: this.addedTimeLimit });
       }
       this.alertedAt15 = this.timeRemaining <= 900;
       this.alertedAt5 = this.timeRemaining <= 300;
@@ -933,6 +944,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         this.keyboardNavService.exitScope(); // sale del scope game-finished
       }
     } else {
+      this.logging.warn('game', 'time_add_password_failed', { action: this.pendingPasswordAction });
       this.passwordError = true;
     }
   }
@@ -1136,7 +1148,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // VALIDACIÓN 1: Pinos deben estar entre 0 y 10
     if (pins < 0 || pins > 10) {
-      console.error('Error: Los pinos deben estar entre 0 y 10');
+      this.logging.error('game', 'invalid_pin_count', undefined, { pins, currentFrame: this.currentFrame, currentPlayer: this.currentPlayer });
       return;
     }
 
@@ -1291,6 +1303,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       // No nulleamos currentSessionId aquí: si se dan +5min desde el modal de juego terminado,
       // finishGame() se llamará de nuevo y actualizará el mismo registro con el addedTimeLimit correcto.
     }
+    this.logging.info('game', 'game_finished', { playerCount: this.players.length, initialTimeLimit: this.initialTimeLimit, addedTimeLimit: this.addedTimeLimit });
   }
 
   resetGame() {
@@ -1346,6 +1359,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Accounting Hook
     this.currentSessionId = this.accountingService.startGame(this.players.length);
+    this.logging.info('game', 'game_started', { playerCount: this.players.length, timeLimitMinutes: this.timeLimit });
   }
 
   changeTimeLimit(minutes: number) {

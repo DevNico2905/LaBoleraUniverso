@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { SupabaseService } from './supabase';
+import { LoggingService } from './logging.service';
 
 const DEVICE_TOKEN_KEY = 'bowling_device_token';
 const MAX_DEVICES_CONFIG_KEY = 'max_devices';
@@ -29,7 +30,7 @@ export class AuthService {
 
   authState$ = this.state.asObservable();
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService, private logging: LoggingService) {}
 
   private get supabase() {
     return this.supabaseService.client;
@@ -62,6 +63,7 @@ export class AuthService {
     const { error: authError } = await this.supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
+      this.logging.warn('auth', 'login_failed', { reason: 'invalid_credentials' });
       this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: 'Credenciales incorrectas.' });
       return { success: false, error: 'Credenciales incorrectas.' };
     }
@@ -69,6 +71,7 @@ export class AuthService {
     const role = await this.fetchRole();
 
     if (role === 'admin') {
+      this.logging.info('auth', 'login_success', { role });
       this.state.next({ isAuthenticated: true, isDeviceAuthorized: true, isLoading: false, role, error: null });
       return { success: true, role };
     }
@@ -77,11 +80,13 @@ export class AuthService {
     const deviceResult = await this.validateOrRegisterDevice(deviceName);
 
     if (!deviceResult.success) {
+      this.logging.warn('auth', 'login_failed', { reason: deviceResult.error });
       await this.supabase.auth.signOut();
       this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: deviceResult.error ?? null });
       return { success: false, error: deviceResult.error };
     }
 
+    this.logging.info('auth', 'login_success', { role, isNewDevice: deviceResult.isNew });
     this.state.next({ isAuthenticated: true, isDeviceAuthorized: true, isLoading: false, role, error: null });
     return { success: true, role, isNewDevice: deviceResult.isNew };
   }
@@ -108,6 +113,7 @@ export class AuthService {
     // Cliente: validar device token
     const deviceToken = localStorage.getItem(DEVICE_TOKEN_KEY);
     if (!deviceToken) {
+      this.logging.warn('auth', 'session_restore_failed', { reason: 'no_device_token' });
       await this.supabase.auth.signOut();
       this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: null });
       return false;
@@ -120,6 +126,7 @@ export class AuthService {
       .single();
 
     if (error || !data || !data.is_active) {
+      this.logging.warn('auth', 'session_restore_failed', { reason: data && !data.is_active ? 'device_inactive' : 'device_not_found' });
       await this.supabase.auth.signOut();
       localStorage.removeItem(DEVICE_TOKEN_KEY);
       this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: null });
@@ -149,6 +156,7 @@ export class AuthService {
   }
 
   async logout(): Promise<void> {
+    this.logging.info('auth', 'logout');
     await this.supabase.auth.signOut();
     this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: null });
   }
@@ -165,14 +173,21 @@ export class AuthService {
 
     if (!user) return { success: false, error: 'No se pudo obtener el usuario.' };
 
-    const { data: existingDevice } = await this.supabase
+    const { data: existingDevice, error: deviceQueryError } = await this.supabase
       .from('authorized_devices')
       .select('id, is_active')
       .eq('device_token', deviceToken)
       .single();
 
+    // PGRST116 = "no rows found" (esperado para dispositivos nuevos). Cualquier otro error es inesperado.
+    if (deviceQueryError && deviceQueryError.code !== 'PGRST116') {
+      this.logging.error('auth', 'device_lookup_failed', deviceQueryError, { code: deviceQueryError.code });
+      return { success: false, error: 'Error al verificar el dispositivo. Intenta de nuevo.' };
+    }
+
     if (existingDevice) {
       if (!existingDevice.is_active) {
+        this.logging.warn('auth', 'device_revoked', { deviceToken });
         return { success: false, error: 'Este dispositivo ha sido revocado. Contacta al administrador.' };
       }
       await this.supabase
@@ -189,6 +204,7 @@ export class AuthService {
 
     const limitCheck = await this.checkDeviceLimit();
     if (!limitCheck.canRegister) {
+      this.logging.warn('auth', 'device_limit_reached', { max: limitCheck.max, current: limitCheck.current });
       return { success: false, error: `Límite de dispositivos alcanzado (${limitCheck.max}). Contacta al administrador.` };
     }
 
@@ -202,9 +218,11 @@ export class AuthService {
       });
 
     if (insertError) {
+      this.logging.error('auth', 'device_registration_failed', insertError);
       return { success: false, error: 'Error al registrar el dispositivo.' };
     }
 
+    this.logging.info('auth', 'device_registered', { deviceName: deviceName.trim() });
     return { success: true, isNew: true };
   }
 

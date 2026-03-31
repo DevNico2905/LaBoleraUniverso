@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { GameSession, DailySummary } from '../models/accounting.models';
 import * as XLSX from 'xlsx';
+import { LoggingService } from './logging.service';
 
 @Injectable({
     providedIn: 'root'
@@ -13,7 +14,7 @@ export class AccountingService {
     public isDayOpen = false;
     public isClosingDay = false;
 
-    constructor() {
+    constructor(private logging: LoggingService) {
         this.loadSessions();
     }
 
@@ -26,7 +27,7 @@ export class AccountingService {
                 // For simplicity, we load everything in the "current bucket" until closed.
                 this.currentSessions = parsed;
             } catch (e) {
-                console.error('Error loading sessions', e);
+                this.logging.error('accounting', 'sessions_load_failed', e as Error);
                 this.currentSessions = [];
             }
         }
@@ -52,6 +53,7 @@ export class AccountingService {
         };
         this.currentSessions.push(session);
         this.saveSessions();
+        this.logging.info('accounting', 'game_session_started', { sessionId: id, playerCount, laneId });
         return id;
     }
 
@@ -75,6 +77,7 @@ export class AccountingService {
 
         this.currentSessions[index] = session;
         this.saveSessions();
+        this.logging.info('accounting', 'game_session_ended', { sessionId, status, totalTimeMinutes: session.totalTimeMinutes, initialTimeMinutes, addedTimeMinutes });
         return session;
     }
 
@@ -100,6 +103,7 @@ export class AccountingService {
 
     openDay() {
         this.isDayOpen = true;
+        this.logging.info('accounting', 'day_opened');
         // Optional: Archive old sessions if they exist from a previous unclosed day?
         // For now, we keep them as part of the "Current Open Day" bucket.
     }
@@ -174,16 +178,17 @@ export class AccountingService {
                 })
             }).then(response => {
                 if (response.ok) {
-                    console.log('✅ Correo de cierre de caja enviado con éxito');
+                    this.logging.info('accounting', 'email_sent', { laneName, date: summary.date });
                 } else {
-                    response.json().then(err => console.error('❌ Error API al enviar correo:', err));
+                    response.json().then(err => this.logging.error('accounting', 'email_failed', undefined, { laneName, apiError: err }));
                 }
-            }).catch(err => console.error('❌ Error de red enviando correo:', err));
+            }).catch(err => this.logging.error('accounting', 'email_network_error', err as Error, { laneName }));
         } catch (e) {
-            console.error('Error al generar adjunto para envío:', e);
+            this.logging.error('accounting', 'email_attachment_failed', e as Error);
         }
 
         // 6. Clear Current Sessions & Close Day
+        this.logging.info('accounting', 'day_closed', { laneName, totalGames: summary.totalGames, totalTimeMinutes: summary.totalTimeMinutes });
         this.currentSessions = [];
         this.saveSessions();
 
