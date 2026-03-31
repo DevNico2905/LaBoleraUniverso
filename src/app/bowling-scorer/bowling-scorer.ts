@@ -152,6 +152,18 @@ interface CompletedGame {
                 </svg>
               </button>
 
+              <!-- Botón gestionar jugadores (solo durante el juego) -->
+              <button
+                *ngIf="gameStarted && !gameFinished"
+                (click)="openPlayerManagementModal()"
+                class="kb-focusable bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition"
+                title="Gestionar jugadores"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </button>
+
               <!-- Botón cancelar partida (solo durante el juego) -->
               <button
                 *ngIf="gameStarted && !gameFinished"
@@ -502,6 +514,60 @@ interface CompletedGame {
         </div>
       </div>
 
+      <!-- Modal de gestión de jugadores mid-game -->
+      <div *ngIf="showPlayerManagementModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+        <div data-modal="player-management" class="bg-gradient-to-br from-purple-700 to-indigo-800 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+          <div class="text-center text-white mb-6">
+            <h2 class="text-2xl font-bold">Gestionar Jugadores</h2>
+            <p class="text-sm text-white/70 mt-1">Frame actual: {{ currentFrame + 1 }}</p>
+          </div>
+
+          <!-- Lista de jugadores -->
+          <div class="flex flex-col gap-2 mb-6">
+            <div *ngFor="let player of players; let i = index"
+                 class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+              <span class="flex-1 font-semibold text-white text-sm">
+                {{ player.name || ('Jugador ' + (i + 1)) }}
+              </span>
+              <span *ngIf="i === currentPlayer"
+                    class="text-xs bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">
+                Jugando
+              </span>
+              <button
+                (click)="removePlayerMidGame(i)"
+                [disabled]="players.length <= 1 || i === currentPlayer"
+                class="kb-focusable bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:opacity-40 text-white p-1.5 rounded-lg transition"
+                [title]="i === currentPlayer ? 'No se puede quitar al jugador activo' : 'Quitar jugador'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón agregar -->
+          <button
+            (click)="addPlayerMidGame()"
+            [disabled]="players.length >= 9"
+            class="kb-focusable w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:opacity-40 text-white py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 mb-4"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Agregar Jugador
+          </button>
+
+          <button
+            (click)="closePlayerManagementModal()"
+            class="kb-focusable w-full bg-white/20 hover:bg-white/30 text-white py-3 rounded-xl font-bold text-sm transition"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+
       <!-- Day Closing Modal REMOVED -->
   `,
   styles: [`
@@ -564,6 +630,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   cancelPasswordInput = '';
   cancelPasswordError = false;
   cancelPasswordSuccess = false;
+
+  showPlayerManagementModal = false;
 
   get hasCompletedGames(): boolean {
     return this.players.length > 0 && this.players[0].completedGames.length > 0;
@@ -886,6 +954,35 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }
   }
 
+  openPlayerManagementModal() {
+    this.showPlayerManagementModal = true;
+    this.keyboardNavService.enterScope('[data-modal="player-management"]');
+  }
+
+  closePlayerManagementModal() {
+    this.showPlayerManagementModal = false;
+    this.keyboardNavService.exitScope();
+  }
+
+  addPlayerMidGame() {
+    if (this.players.length < 9) {
+      this.players.push({
+        name: '',
+        frames: this.createInitialFrames(),
+        completedGames: [],
+        currentGameNumber: 1
+      });
+    }
+  }
+
+  removePlayerMidGame(pIndex: number) {
+    if (this.players.length <= 1 || pIndex === this.currentPlayer) return;
+    this.players.splice(pIndex, 1);
+    if (pIndex < this.currentPlayer) {
+      this.currentPlayer--;
+    }
+  }
+
   // --- SECURITY & ACCOUNTING METHODS ---
 
   // Unlock App Method REMOVED
@@ -1018,15 +1115,17 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Recalcular hasta el índice deseado para obtener el acumulado correcto
     for (let i = 0; i <= frameIndex; i++) {
+      // Frame no iniciado (jugador se unió después de este frame): ignorar
+      if (player.frames[i][0] === null) continue;
       const frameScore = this.calculateFrameScore(player.frames, i);
       if (frameScore === null) {
-        return null; // Si un frame anterior está incompleto, no mostramos totales futuros
-      } else {
-        cumulative += frameScore;
+        return null; // Frame iniciado pero incompleto: no mostramos totales futuros
       }
+      cumulative += frameScore;
     }
 
     // Verificamos si el frame actual ya tiene score calculado
+    if (player.frames[frameIndex][0] === null) return null;
     if (this.calculateFrameScore(player.frames, frameIndex) === null) return null;
 
     return cumulative;
@@ -1189,7 +1288,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
       this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed', this.initialTimeLimit, this.addedTimeLimit);
-      this.currentSessionId = null;
+      // No nulleamos currentSessionId aquí: si se dan +5min desde el modal de juego terminado,
+      // finishGame() se llamará de nuevo y actualizará el mismo registro con el addedTimeLimit correcto.
     }
   }
 
@@ -1199,8 +1299,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     if (this.gameStarted && !this.gameFinished && this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
       this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
-      this.currentSessionId = null;
     }
+    this.currentSessionId = null;
 
     this.players = [{
       name: '',
@@ -1267,8 +1367,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         return frame[0] === 10 ? 10 : 10 - (frame[0] || 0);
       }
       if (this.currentRoll === 2) {
-        // Tercer tiro: si el segundo fue strike, resetea a 10; sino, lo que queda
-        return frame[1] === 10 ? 10 : 10 - (frame[1] || 0);
+        if (frame[1] === 10) return 10; // Segundo fue strike: reset completo
+        if (frame[0] === 10) return 10 - (frame[1] || 0); // Primer fue strike, segundo no: pines restantes
+        return 10; // Spare (ej. 7+3): reset completo
       }
     }
 
