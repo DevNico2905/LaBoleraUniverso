@@ -891,7 +891,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
       // Accounting Hook: Mark as Cancelled
       if (this.currentSessionId) {
         const billedMinutes = this.calculateBilledDuration();
-        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
+        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit, this.players.length);
         this.currentSessionId = null;
       }
 
@@ -1299,7 +1299,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // Accounting Hook
     if (this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
-      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed', this.initialTimeLimit, this.addedTimeLimit);
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed', this.initialTimeLimit, this.addedTimeLimit, this.players.length);
       // No nulleamos currentSessionId aquí: si se dan +5min desde el modal de juego terminado,
       // finishGame() se llamará de nuevo y actualizará el mismo registro con el addedTimeLimit correcto.
     }
@@ -1311,7 +1311,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // This is a fallback or for development reset.
     if (this.gameStarted && !this.gameFinished && this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
-      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit, this.players.length);
     }
     this.currentSessionId = null;
 
