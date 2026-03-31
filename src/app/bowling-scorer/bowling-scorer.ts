@@ -444,7 +444,7 @@ interface CompletedGame {
                 </button>
               }
               <button
-                (click)="resetAndGoHome()"
+                (click)="goBack()"
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>
@@ -1238,10 +1238,6 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.stopTimer();
   }
 
-  resetAndGoHome() {
-    this.resetGame();
-    this.router.navigate(['/']);
-  }
 
   startGame() {
     this.gameStarted = true;
@@ -1284,9 +1280,10 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false): string {
     if (roll === null) return '';
 
-    // Frame 10: mostrar siempre el número o X
+    // Frame 10: mostrar X, spare (/), guión o número
     if (isFrame10) {
       if (roll === 10) return 'X';
+      if (previousRoll !== null && previousRoll !== 10 && previousRoll + roll === 10) return '/';
       if (roll === 0) return '-';
       return roll.toString();
     }
