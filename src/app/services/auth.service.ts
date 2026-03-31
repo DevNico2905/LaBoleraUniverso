@@ -152,11 +152,13 @@ export class AuthService {
 
   // Verifica la contraseña del usuario actualmente logueado
   async verifyPassword(password: string): Promise<boolean> {
-    const { data: { user } } = await this.supabase.auth.getUser();
-    if (!user?.email) return false;
+    // getSession() lee el email desde localStorage sin requerir access token vigente
+    const { data: { session } } = await this.supabase.auth.getSession();
+    const email = session?.user?.email;
+    if (!email) return false;
 
     const { error } = await this.supabase.auth.signInWithPassword({
-      email: user.email,
+      email,
       password,
     });
 
