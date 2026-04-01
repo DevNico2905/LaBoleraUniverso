@@ -146,6 +146,16 @@ export class AuthService {
 
     // Dispositivo no encontrado o inactivo — sí borrar el token y cerrar sesión
     if (!data || !data.is_active) {
+      // Si data es null, puede ser que el auth falló (JWT expirado, lock de Supabase)
+      // y RLS filtró todas las filas. Verificar con getUser() antes de borrar el token.
+      if (!data) {
+        const { data: { user } } = await this.supabase.auth.getUser();
+        if (!user) {
+          this.logging.warn('auth', 'session_restore_failed', { reason: 'auth_verification_failed' });
+          this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: null });
+          return false;
+        }
+      }
       this.logging.warn('auth', 'session_restore_failed', { reason: data && !data.is_active ? 'device_inactive' : 'device_not_found' });
       await this.supabase.auth.signOut();
       localStorage.removeItem(DEVICE_TOKEN_KEY);
