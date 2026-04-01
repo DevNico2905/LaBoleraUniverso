@@ -95,7 +95,19 @@ export class AuthService {
   async restoreSession(): Promise<boolean> {
     this.state.next({ ...this.state.value, isLoading: true });
 
-    const { data: { session } } = await this.supabase.auth.getSession();
+    // Reintenta hasta 3 veces con 1.5s de espera entre intentos.
+    // Cubre el caso donde el browser abre antes de que la red esté lista.
+    let session = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data } = await this.supabase.auth.getSession();
+      if (data.session) {
+        session = data.session;
+        break;
+      }
+      if (attempt < 2) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+      }
+    }
 
     if (!session) {
       this.state.next({ isAuthenticated: false, isDeviceAuthorized: false, isLoading: false, role: null, error: null });

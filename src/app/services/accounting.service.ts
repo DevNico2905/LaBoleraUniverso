@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { GameSession, DailySummary } from '../models/accounting.models';
 import * as XLSX from 'xlsx';
 import { LoggingService } from './logging.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
@@ -170,7 +171,7 @@ export class AccountingService {
             // Usa un fire-and-forget para no bloquear el cierre en caso de red lenta
             fetch(fetchUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Api-Secret': environment.apiSecret },
                 body: JSON.stringify({
                     date: summary.date,
                     totalGames: summary.totalGames,
