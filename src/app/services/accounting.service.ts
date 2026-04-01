@@ -9,7 +9,7 @@ import { environment } from '../../environments/environment';
 })
 export class AccountingService {
     private readonly STORAGE_KEY = 'bowling_daily_sessions';
-    private readonly STATE_KEY_REMOVED = ''; // Removed
+    private readonly DAY_OPEN_KEY = 'bowling_day_open';
 
     private currentSessions: GameSession[] = [];
     public isDayOpen = false;
@@ -17,6 +17,7 @@ export class AccountingService {
 
     constructor(private logging: LoggingService) {
         this.loadSessions();
+        this.isDayOpen = localStorage.getItem(this.DAY_OPEN_KEY) === 'true';
     }
 
     private loadSessions() {
@@ -105,6 +106,7 @@ export class AccountingService {
 
     openDay() {
         this.isDayOpen = true;
+        localStorage.setItem(this.DAY_OPEN_KEY, 'true');
         this.logging.info('accounting', 'day_opened');
         // Optional: Archive old sessions if they exist from a previous unclosed day?
         // For now, we keep them as part of the "Current Open Day" bucket.
@@ -168,7 +170,17 @@ export class AccountingService {
             const baseUrl = isDesktop ? 'https://labolerauniverso.nick-bern.com' : '';
             const fetchUrl = `${baseUrl}/api/send-email`;
 
-            // Usa un fire-and-forget para no bloquear el cierre en caso de red lenta
+            // Fire-and-forget: no bloqueamos la UI, pero las sesiones solo se borran
+            // cuando el request termina (éxito o error) para poder reintentar si falla.
+            const clearDay = () => {
+                this.logging.info('accounting', 'day_closed', { laneName, totalGames: summary.totalGames, totalTimeMinutes: summary.totalTimeMinutes });
+                this.currentSessions = [];
+                this.saveSessions();
+                localStorage.removeItem(this.DAY_OPEN_KEY);
+                this.isDayOpen = false;
+                this.isClosingDay = false;
+            };
+
             fetch(fetchUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-Api-Secret': environment.apiSecret },
@@ -176,7 +188,7 @@ export class AccountingService {
                     date: summary.date,
                     totalGames: summary.totalGames,
                     filename: fileName,
-                    laneName: laneName, // Pasamos el nombre de la pista a la API
+                    laneName: laneName,
                     excelBase64: excelBase64
                 })
             }).then(response => {
@@ -185,17 +197,14 @@ export class AccountingService {
                 } else {
                     response.json().then(err => this.logging.error('accounting', 'email_failed', undefined, { laneName, apiError: err }));
                 }
-            }).catch(err => this.logging.error('accounting', 'email_network_error', err as Error, { laneName }));
+                clearDay();
+            }).catch(err => {
+                this.logging.error('accounting', 'email_network_error', err as Error, { laneName });
+                clearDay();
+            });
         } catch (e) {
             this.logging.error('accounting', 'email_attachment_failed', e as Error);
+            this.isClosingDay = false;
         }
-
-        // 6. Clear Current Sessions & Close Day
-        this.logging.info('accounting', 'day_closed', { laneName, totalGames: summary.totalGames, totalTimeMinutes: summary.totalTimeMinutes });
-        this.currentSessions = [];
-        this.saveSessions();
-
-        this.isDayOpen = false;
-        this.isClosingDay = false;
     }
 }
