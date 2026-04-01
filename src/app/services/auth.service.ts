@@ -236,6 +236,7 @@ export class AuthService {
         device_token: deviceToken,
         device_name: deviceName.trim(),
         user_id: user.id,
+        is_active: true,
         last_seen: new Date().toISOString(),
       });
 
