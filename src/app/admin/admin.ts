@@ -29,6 +29,8 @@ export class Admin implements OnInit {
   editingId: string | null = null;
   editingName = '';
   saveStatus: 'idle' | 'saving' | 'success' | 'error' = 'idle';
+  sortColumn: 'device_name' | 'is_active' | 'last_seen' | 'created_at' | null = null;
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   constructor(
     private supabaseService: SupabaseService,
@@ -67,6 +69,42 @@ export class Admin implements OnInit {
 
   get activeCount(): number {
     return this.devices.filter(d => d.is_active).length;
+  }
+
+  get sortedDevices(): Device[] {
+    if (!this.sortColumn) return this.devices;
+
+    const col = this.sortColumn;
+    const dir = this.sortDirection === 'asc' ? 1 : -1;
+
+    return [...this.devices].sort((a, b) => {
+      let valA: string | number;
+      let valB: string | number;
+
+      if (col === 'is_active') {
+        valA = a.is_active ? 1 : 0;
+        valB = b.is_active ? 1 : 0;
+      } else if (col === 'last_seen' || col === 'created_at') {
+        valA = a[col] ? new Date(a[col]!).getTime() : 0;
+        valB = b[col] ? new Date(b[col]!).getTime() : 0;
+      } else {
+        valA = a.device_name.toLowerCase();
+        valB = b.device_name.toLowerCase();
+      }
+
+      if (valA < valB) return -dir;
+      if (valA > valB) return dir;
+      return 0;
+    });
+  }
+
+  setSort(column: 'device_name' | 'is_active' | 'last_seen' | 'created_at') {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
   }
 
   async toggleDevice(device: Device) {
