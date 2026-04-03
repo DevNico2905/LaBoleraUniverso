@@ -90,7 +90,12 @@ export class AccountingService {
     }
 
     getTodaySummary(): DailySummary {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        // Usamos la hora local en lugar de UTC para que los cierres nocturnos tengan la fecha correcta
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         const finishedSessions = this.currentSessions.filter(s => s.endTime !== null);
         const completedSessions = finishedSessions.filter(s => s.status === 'completed');
 
