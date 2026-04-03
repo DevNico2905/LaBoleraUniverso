@@ -30,7 +30,7 @@ export class AuthService {
 
   authState$ = this.state.asObservable();
 
-  constructor(private supabaseService: SupabaseService, private logging: LoggingService) {}
+  constructor(private supabaseService: SupabaseService, private logging: LoggingService) { }
 
   private get supabase() {
     return this.supabaseService.client;
@@ -86,7 +86,7 @@ export class AuthService {
       return { success: false, error: deviceResult.error };
     }
 
-    this.logging.info('auth', 'login_success', { role, isNewDevice: deviceResult.isNew });
+    this.logging.info('auth', 'login_success', { role, isNewDevice: deviceResult.isNew, deviceName: deviceResult.deviceName });
     this.state.next({ isAuthenticated: true, isDeviceAuthorized: true, isLoading: false, role, error: null });
     return { success: true, role, isNewDevice: deviceResult.isNew };
   }
@@ -199,7 +199,7 @@ export class AuthService {
 
   // --- Lógica interna de registro de dispositivo ---
 
-  private async validateOrRegisterDevice(deviceName?: string): Promise<{ success: boolean; isNew?: boolean; error?: string }> {
+  private async validateOrRegisterDevice(deviceName?: string): Promise<{ success: boolean; isNew?: boolean; deviceName?: string; error?: string }> {
     const deviceToken = this.getOrCreateDeviceToken();
     const { data: { user } } = await this.supabase.auth.getUser();
 
@@ -207,7 +207,7 @@ export class AuthService {
 
     const { data: existingDevice, error: deviceQueryError } = await this.supabase
       .from('authorized_devices')
-      .select('id, is_active')
+      .select('id, is_active, device_name')
       .eq('device_token', deviceToken)
       .single();
 
@@ -226,7 +226,7 @@ export class AuthService {
         .from('authorized_devices')
         .update({ last_seen: new Date().toISOString() })
         .eq('id', existingDevice.id);
-      return { success: true, isNew: false };
+      return { success: true, isNew: false, deviceName: existingDevice.device_name ?? undefined };
     }
 
     // Dispositivo nuevo — si no hay nombre aún, indicarlo para que la UI lo pida
@@ -256,7 +256,7 @@ export class AuthService {
     }
 
     this.logging.info('auth', 'device_registered', { deviceName: deviceName.trim() });
-    return { success: true, isNew: true };
+    return { success: true, isNew: true, deviceName: deviceName.trim() };
   }
 
   private async checkDeviceLimit(): Promise<{ canRegister: boolean; max: number; current: number }> {
