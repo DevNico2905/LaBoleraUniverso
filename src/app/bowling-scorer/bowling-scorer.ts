@@ -456,6 +456,13 @@ interface CompletedGame {
                   +5 min
                 </button>
               }
+              @if (!extraTimeAdded) {
+                <button
+                  (click)="openPasswordPrompt('add60')"
+                  class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
+                  +60 min
+                </button>
+              }
               <button
                 (click)="goBack()"
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
@@ -928,11 +935,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         this.timeRemaining += 60 * 60;
         this.timeLimit += 60;
         this.addedTimeLimit += 60;
-        if (this.targetEndTime !== null) {
-          this.targetEndTime += 60 * 60 * 1000;
-        }
         this.extraTimeAdded = true;
         this.logging.info('game', 'time_extended', { action: 'add60', addedMinutes: 60, totalAddedMinutes: this.addedTimeLimit });
+        if (wasGameFinished) {
+          this.gameFinished = false;
+          this.targetEndTime = Date.now() + this.timeRemaining * 1000;
+          this.isTimerRunning = true;
+          this.startTimer();
+        } else if (this.targetEndTime !== null) {
+          this.targetEndTime += 60 * 60 * 1000;
+        }
       }
       this.alertedAt15 = this.timeRemaining <= 900;
       this.alertedAt5 = this.timeRemaining <= 300;
