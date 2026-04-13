@@ -359,8 +359,7 @@ interface CompletedGame {
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
                 Continuar
               </button>
-              <button 
-                *ngIf="!compensationTimeAdded"
+              <button
                 (click)="openPasswordPrompt('add5')"
                 class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2"
                 title="Compensar tiempo perdido">
@@ -369,8 +368,7 @@ interface CompletedGame {
                 </svg> -->
                 +5 min
               </button>
-              <button 
-                *ngIf="!extraTimeAdded"
+              <button
                 (click)="openPasswordPrompt('add60')"
                 class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <!-- <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -449,20 +447,16 @@ interface CompletedGame {
             </div>
 
             <div class="flex gap-4 justify-center">
-              @if (!compensationTimeAdded) {
-                <button
-                  (click)="openPasswordPrompt('add5')"
-                  class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
-                  +5 min
-                </button>
-              }
-              @if (!extraTimeAdded) {
-                <button
-                  (click)="openPasswordPrompt('add60')"
-                  class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
-                  +60 min
-                </button>
-              }
+              <button
+                (click)="openPasswordPrompt('add5')"
+                class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
+                +5 min
+              </button>
+              <button
+                (click)="openPasswordPrompt('add60')"
+                class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
+                +60 min
+              </button>
               <button
                 (click)="goBack()"
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
