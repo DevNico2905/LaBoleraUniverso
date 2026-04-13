@@ -136,7 +136,7 @@ export default async function handler(req: any, res: any) {
               <div style="background-color:#f9f9f9;border-radius:8px;padding:14px 16px;border:1px solid #e4e4e7;text-align:center;">
                 <div style="font-size:10px;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Total</div>
                 <div style="font-size:24px;font-weight:700;color:#18181b;">${safeTotalTime}</div>
-                <div style="font-size:10px;color:#a1a1aa;margin-top:3px;">jugadas</div>
+                <div style="font-size:10px;color:#a1a1aa;margin-top:3px;">Facturadas</div>
               </div>
             </td>
           </tr></table>
@@ -173,7 +173,7 @@ export default async function handler(req: any, res: any) {
       attachments: [
         {
           filename: finalFilename,
-          content: excelBase64.split('base64,').pop() || excelBase64, 
+          content: excelBase64.split('base64,').pop() || excelBase64,
         },
       ],
     });
