@@ -14,5 +14,6 @@ export interface DailySummary {
   date: string; // ISO Date String (YYYY-MM-DD)
   totalTimeMinutes: number;
   totalGames: number;
+  cancelledGames: number;
   sessions: GameSession[];
 }

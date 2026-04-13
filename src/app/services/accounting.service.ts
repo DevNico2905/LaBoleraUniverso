@@ -99,12 +99,14 @@ export class AccountingService {
         const finishedSessions = this.currentSessions.filter(s => s.endTime !== null);
         const completedSessions = finishedSessions.filter(s => s.status === 'completed');
 
+        const cancelledSessions = finishedSessions.filter(s => s.status === 'cancelled');
         const totalTime = finishedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
 
         return {
             date: today,
             totalTimeMinutes: totalTime,
             totalGames: completedSessions.length,
+            cancelledGames: cancelledSessions.length,
             sessions: finishedSessions
         };
     }
@@ -192,6 +194,7 @@ export class AccountingService {
                 body: JSON.stringify({
                     date: summary.date,
                     totalGames: summary.totalGames,
+                    cancelledGames: summary.cancelledGames,
                     filename: fileName,
                     laneName: laneName,
                     excelBase64: excelBase64

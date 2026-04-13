@@ -42,9 +42,11 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { date, totalGames, excelBase64, filename, laneName } = req.body;
+    const { date, totalGames, cancelledGames, excelBase64, filename, laneName } = req.body;
     const safeDate = escapeHtml(date);
     const safeTotalGames = escapeHtml(totalGames);
+    const safeCancelledGames = escapeHtml(cancelledGames ?? 0);
+    const safeTotalAll = escapeHtml((Number(totalGames ?? 0)) + (Number(cancelledGames ?? 0)));
     const safeLaneName = escapeHtml(laneName);
 
     if (!excelBase64) {
@@ -106,11 +108,29 @@ export default async function handler(req: any, res: any) {
 
       <tr>
         <td class="email-wrap" style="padding:20px 32px 24px;">
-          <div style="background-color:#f9f9f9;border-radius:8px;padding:16px 20px;border:1px solid #e4e4e7;">
-            <div style="font-size:11px;color:#71717a;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;">Juegos finalizados</div>
-            <div style="font-size:26px;font-weight:700;color:#18181b;">${safeTotalGames}</div>
-            <div style="font-size:11px;color:#71717a;margin-top:4px;">partidas completadas</div>
-          </div>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%"><tr>
+            <td class="metrics-card" style="width:33%;padding-right:8px;vertical-align:top;">
+              <div style="background-color:#f0fdf4;border-radius:8px;padding:14px 16px;border:1px solid #bbf7d0;text-align:center;">
+                <div style="font-size:10px;color:#16a34a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Finalizados</div>
+                <div style="font-size:28px;font-weight:700;color:#15803d;">${safeTotalGames}</div>
+                <div style="font-size:10px;color:#4ade80;margin-top:3px;">partidas</div>
+              </div>
+            </td>
+            <td class="metrics-card" style="width:33%;padding-right:8px;vertical-align:top;">
+              <div style="background-color:#fef2f2;border-radius:8px;padding:14px 16px;border:1px solid #fecaca;text-align:center;">
+                <div style="font-size:10px;color:#dc2626;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Cancelados</div>
+                <div style="font-size:28px;font-weight:700;color:#b91c1c;">${safeCancelledGames}</div>
+                <div style="font-size:10px;color:#f87171;margin-top:3px;">partidas</div>
+              </div>
+            </td>
+            <td class="metrics-card" style="width:33%;vertical-align:top;">
+              <div style="background-color:#f9f9f9;border-radius:8px;padding:14px 16px;border:1px solid #e4e4e7;text-align:center;">
+                <div style="font-size:10px;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Total</div>
+                <div style="font-size:28px;font-weight:700;color:#18181b;">${safeTotalAll}</div>
+                <div style="font-size:10px;color:#a1a1aa;margin-top:3px;">partidas</div>
+              </div>
+            </td>
+          </tr></table>
         </td>
       </tr>
 
