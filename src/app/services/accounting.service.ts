@@ -100,11 +100,14 @@ export class AccountingService {
         const completedSessions = finishedSessions.filter(s => s.status === 'completed');
 
         const cancelledSessions = finishedSessions.filter(s => s.status === 'cancelled');
-        const totalTime = finishedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
+        const completedTime = completedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
+        const cancelledTime = cancelledSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
 
         return {
             date: today,
-            totalTimeMinutes: totalTime,
+            totalTimeMinutes: completedTime + cancelledTime,
+            completedTimeMinutes: completedTime,
+            cancelledTimeMinutes: cancelledTime,
             totalGames: completedSessions.length,
             cancelledGames: cancelledSessions.length,
             sessions: finishedSessions
@@ -193,8 +196,9 @@ export class AccountingService {
                 headers: { 'Content-Type': 'application/json', 'X-Api-Secret': environment.apiSecret },
                 body: JSON.stringify({
                     date: summary.date,
-                    totalGames: summary.totalGames,
-                    cancelledGames: summary.cancelledGames,
+                    completedTimeMinutes: summary.completedTimeMinutes,
+                    cancelledTimeMinutes: summary.cancelledTimeMinutes,
+                    totalTimeMinutes: summary.totalTimeMinutes,
                     filename: fileName,
                     laneName: laneName,
                     excelBase64: excelBase64

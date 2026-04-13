@@ -42,12 +42,21 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { date, totalGames, cancelledGames, excelBase64, filename, laneName } = req.body;
+    const { date, completedTimeMinutes, cancelledTimeMinutes, totalTimeMinutes, excelBase64, filename, laneName } = req.body;
     const safeDate = escapeHtml(date);
-    const safeTotalGames = escapeHtml(totalGames);
-    const safeCancelledGames = escapeHtml(cancelledGames ?? 0);
-    const safeTotalAll = escapeHtml((Number(totalGames ?? 0)) + (Number(cancelledGames ?? 0)));
     const safeLaneName = escapeHtml(laneName);
+
+    const formatMinutes = (mins: number): string => {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      if (h === 0) return `${m} min`;
+      if (m === 0) return `${h}h`;
+      return `${h}h ${m}min`;
+    };
+
+    const safeCompletedTime = formatMinutes(Number(completedTimeMinutes ?? 0));
+    const safeCancelledTime = formatMinutes(Number(cancelledTimeMinutes ?? 0));
+    const safeTotalTime = formatMinutes(Number(totalTimeMinutes ?? 0));
 
     if (!excelBase64) {
       return res.status(400).json({ message: 'No Excel file provided' });
@@ -112,22 +121,22 @@ export default async function handler(req: any, res: any) {
             <td class="metrics-card" style="width:33%;padding-right:8px;vertical-align:top;">
               <div style="background-color:#f0fdf4;border-radius:8px;padding:14px 16px;border:1px solid #bbf7d0;text-align:center;">
                 <div style="font-size:10px;color:#16a34a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Finalizados</div>
-                <div style="font-size:28px;font-weight:700;color:#15803d;">${safeTotalGames}</div>
-                <div style="font-size:10px;color:#4ade80;margin-top:3px;">partidas</div>
+                <div style="font-size:24px;font-weight:700;color:#15803d;">${safeCompletedTime}</div>
+                <div style="font-size:10px;color:#4ade80;margin-top:3px;">jugadas</div>
               </div>
             </td>
             <td class="metrics-card" style="width:33%;padding-right:8px;vertical-align:top;">
               <div style="background-color:#fef2f2;border-radius:8px;padding:14px 16px;border:1px solid #fecaca;text-align:center;">
                 <div style="font-size:10px;color:#dc2626;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Cancelados</div>
-                <div style="font-size:28px;font-weight:700;color:#b91c1c;">${safeCancelledGames}</div>
-                <div style="font-size:10px;color:#f87171;margin-top:3px;">partidas</div>
+                <div style="font-size:24px;font-weight:700;color:#b91c1c;">${safeCancelledTime}</div>
+                <div style="font-size:10px;color:#f87171;margin-top:3px;">jugadas</div>
               </div>
             </td>
             <td class="metrics-card" style="width:33%;vertical-align:top;">
               <div style="background-color:#f9f9f9;border-radius:8px;padding:14px 16px;border:1px solid #e4e4e7;text-align:center;">
                 <div style="font-size:10px;color:#71717a;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Total</div>
-                <div style="font-size:28px;font-weight:700;color:#18181b;">${safeTotalAll}</div>
-                <div style="font-size:10px;color:#a1a1aa;margin-top:3px;">partidas</div>
+                <div style="font-size:24px;font-weight:700;color:#18181b;">${safeTotalTime}</div>
+                <div style="font-size:10px;color:#a1a1aa;margin-top:3px;">jugadas</div>
               </div>
             </td>
           </tr></table>
