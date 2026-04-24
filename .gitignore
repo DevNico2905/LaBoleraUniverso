@@ -52,4 +52,3 @@ release/
 *.AppImage
 .vercel
 .env
-src/environments/environment.development.ts
