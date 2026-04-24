@@ -1,10 +1,11 @@
 import { Component, OnInit, OnDestroy, HostListener, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
 import { AccountingService } from '../services/accounting.service';
 import { KeyboardNavService } from '../services/keyboard-nav.service';
+import { LoggingService } from '../services/logging.service';
 import { DailySummary } from '../models/accounting.models';
 
 interface Frame {
@@ -28,9 +29,17 @@ interface CompletedGame {
 @Component({
   selector: 'app-bowling-scorer',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule],
   host: { class: 'block h-full' },
   template: `
+      @if (redirectMessage) {
+        <div class="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999]">
+          <div class="bg-gradient-to-br from-red-700 to-rose-900 rounded-3xl p-8 max-w-sm w-full text-white text-center shadow-2xl border border-white/20">
+            <div class="text-4xl mb-4">🔒</div>
+            <p class="text-xl font-semibold">{{ redirectMessage }}</p>
+          </div>
+        </div>
+      }
       <!-- App Lock Screen REMOVED -->
       <div class="h-full flex flex-col p-3">
         <div class="bg-white/10 backdrop-blur-lg rounded-2xl shadow-2xl p-4 border border-white/20 flex flex-col flex-1 overflow-hidden">
@@ -144,6 +153,18 @@ interface CompletedGame {
                 </svg>
               </button>
 
+              <!-- Botón gestionar jugadores (solo durante el juego) -->
+              <button
+                *ngIf="gameStarted && !gameFinished"
+                (click)="openPlayerManagementModal()"
+                class="kb-focusable bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg transition"
+                title="Gestionar jugadores"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </button>
+
               <!-- Botón cancelar partida (solo durante el juego) -->
               <button
                 *ngIf="gameStarted && !gameFinished"
@@ -241,7 +262,7 @@ interface CompletedGame {
                                   [attr.data-findex]="editMode ? i : null"
                                   [attr.data-rindex]="editMode ? 2 : null"
                                   (click)="editMode && gameStarted && isRollEditable(pIndex, i, 2) ? openScoreEditor(pIndex, i, 2) : null">
-                              {{ displayRoll(frame[2], frame[1], true) }}
+                              {{ displayRoll(frame[2], frame[1], true, frame[0]) }}
                             </span>
                           </ng-container>
                           <!-- Frames 1-9: 2 tiros -->
@@ -338,8 +359,7 @@ interface CompletedGame {
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg">
                 Continuar
               </button>
-              <button 
-                *ngIf="!compensationTimeAdded"
+              <button
                 (click)="openPasswordPrompt('add5')"
                 class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2"
                 title="Compensar tiempo perdido">
@@ -348,8 +368,7 @@ interface CompletedGame {
                 </svg> -->
                 +5 min
               </button>
-              <button 
-                *ngIf="!extraTimeAdded"
+              <button
                 (click)="openPasswordPrompt('add60')"
                 class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-lg px-6 py-3 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <!-- <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,7 +381,7 @@ interface CompletedGame {
         </div>
       </div>
 
-      <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+      <div *ngIf="showPasswordPrompt" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
         <div data-modal="password-prompt" class="bg-gradient-to-brown from-blue-500 to-purple-600 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
           <div class="text-center text-white">
             <div class="text-6xl mb-4">🔐</div>
@@ -428,9 +447,18 @@ interface CompletedGame {
             </div>
 
             <div class="flex gap-4 justify-center">
-              <button 
-                (click)="resetGame()"
-                routerLink=""
+              <button
+                (click)="openPasswordPrompt('add5')"
+                class="kb-focusable bg-blue-500 text-white hover:bg-blue-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
+                +5 min
+              </button>
+              <button
+                (click)="openPasswordPrompt('add60')"
+                class="kb-focusable bg-green-500 text-white hover:bg-green-600 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg">
+                +60 min
+              </button>
+              <button
+                (click)="goBack()"
                 class="kb-focusable bg-white text-orange-600 hover:bg-orange-50 font-bold text-xl px-8 py-4 rounded-xl transition transform hover:scale-105 shadow-lg flex items-center gap-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <polyline points="1 4 1 10 7 10"></polyline>
@@ -488,6 +516,60 @@ interface CompletedGame {
         </div>
       </div>
 
+      <!-- Modal de gestión de jugadores mid-game -->
+      <div *ngIf="showPlayerManagementModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-60 p-4">
+        <div data-modal="player-management" class="bg-gradient-to-br from-purple-700 to-indigo-800 rounded-3xl p-8 max-w-md w-full shadow-[0_20px_50px_rgba(0,0,0,0.9)] border-4 border-white/20 transform animate-fadeIn">
+          <div class="text-center text-white mb-6">
+            <h2 class="text-2xl font-bold">Gestionar Jugadores</h2>
+            <p class="text-sm text-white/70 mt-1">Frame actual: {{ currentFrame + 1 }}</p>
+          </div>
+
+          <!-- Lista de jugadores -->
+          <div class="flex flex-col gap-2 mb-6">
+            <div *ngFor="let player of players; let i = index"
+                 class="flex items-center gap-3 bg-white/10 rounded-xl px-4 py-3">
+              <span class="flex-1 font-semibold text-white text-sm">
+                {{ player.name || ('Jugador ' + (i + 1)) }}
+              </span>
+              <span *ngIf="i === currentPlayer"
+                    class="text-xs bg-yellow-400 text-yellow-900 font-bold px-2 py-0.5 rounded-full">
+                Jugando
+              </span>
+              <button
+                (click)="removePlayerMidGame(i)"
+                [disabled]="players.length <= 1 || i === currentPlayer"
+                class="kb-focusable bg-red-500 hover:bg-red-600 disabled:bg-gray-600 disabled:opacity-40 text-white p-1.5 rounded-lg transition"
+                [title]="i === currentPlayer ? 'No se puede quitar al jugador activo' : 'Quitar jugador'"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón agregar -->
+          <button
+            (click)="addPlayerMidGame()"
+            [disabled]="players.length >= 9"
+            class="kb-focusable w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-600 disabled:opacity-40 text-white py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 mb-4"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Agregar Jugador
+          </button>
+
+          <button
+            (click)="closePlayerManagementModal()"
+            class="kb-focusable w-full bg-white/20 hover:bg-white/30 text-white py-3 rounded-xl font-bold text-sm transition"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+
       <!-- Day Closing Modal REMOVED -->
   `,
   styles: [`
@@ -538,7 +620,6 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   private warningCountdownInterval: any = null;
   showPasswordPrompt = false;
   passwordInput = '';
-  correctPassword = 'admin123';
   passwordError = false;
   extraTimeAdded = false;
   compensationTimeAdded = false;
@@ -551,6 +632,8 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   cancelPasswordInput = '';
   cancelPasswordError = false;
   cancelPasswordSuccess = false;
+
+  showPlayerManagementModal = false;
 
   get hasCompletedGames(): boolean {
     return this.players.length > 0 && this.players[0].completedGames.length > 0;
@@ -566,13 +649,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     private accountingService: AccountingService,
     private authService: AuthService,
     private cdr: ChangeDetectorRef,
-    private keyboardNavService: KeyboardNavService
+    private keyboardNavService: KeyboardNavService,
+    private logging: LoggingService
   ) { }
 
+  redirectMessage = '';
+
   ngOnInit() {
-    // Security Check: Redirect if day is not open
     if (!this.accountingService.isDayOpen) {
-      this.router.navigate(['']);
+      this.redirectMessage = 'La caja no está abierta. Abre la caja antes de iniciar un juego.';
+      setTimeout(() => this.router.navigate(['']), 2500);
       return;
     }
     this.startTimer();
@@ -583,6 +669,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    this.keyboardNavService.exitScope();
     this.stopTimer();
     if (this.warningCountdownInterval) {
       clearInterval(this.warningCountdownInterval);
@@ -711,19 +798,24 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
             this.timeWarningMessage = '¡Quedan 15 minutos de juego!';
             this.showTimeWarning = true;
             this.startWarningCountdown();
-            this.focusModal('[data-modal="time-warning"]');
+            this.keyboardNavService.enterScope('[data-modal="time-warning"]');
+            this.logging.info('game', 'time_warning', { minutesRemaining: 15 });
           }
 
           if (this.timeRemaining <= 300 && !this.alertedAt5) {
             this.alertedAt5 = true;
             this.timeWarningMessage = '¡Quedan solo 5 minutos de juego!';
             this.showTimeWarning = true;
-            this.focusModal('[data-modal="time-warning"]');
+            this.keyboardNavService.enterScope('[data-modal="time-warning"]');
+            this.logging.info('game', 'time_warning', { minutesRemaining: 5 });
           }
 
           // Cuando el tiempo llega a 0, NO paramos inmediatamente.
           // Activamos la bandera para terminar al final del frame actual.
           if (this.timeRemaining === 0) {
+            if (!this.stopPending) {
+              this.logging.info('game', 'time_expired', { initialTimeLimit: this.initialTimeLimit, addedTimeLimit: this.addedTimeLimit });
+            }
             this.stopPending = true;
           }
         }
@@ -746,6 +838,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   // Métodos de Modales (sin cambios mayores)
   closeTimeWarning() {
     this.showTimeWarning = false;
+    this.keyboardNavService.exitScope();
     if (this.warningCountdownInterval) {
       clearInterval(this.warningCountdownInterval);
       this.warningCountdownInterval = null;
@@ -766,84 +859,98 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
-  /** Mueve el foco al primer elemento kb-focusable dentro del selector del modal dado. */
-  private focusModal(modalSelector: string) {
-    setTimeout(() => {
-      const modal = document.querySelector(modalSelector);
-      if (!modal) return;
-      const focusable = modal.querySelector<HTMLElement>(
-        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      );
-      if (focusable) {
-        document.querySelectorAll('.kb-focused').forEach(el => el.classList.remove('kb-focused'));
-        focusable.classList.add('kb-focused');
-        focusable.focus();
-      }
-    }, 50);
-  }
 
-  openPasswordPrompt(action: 'add60' | 'add5' = 'add60') { 
+  openPasswordPrompt(action: 'add60' | 'add5' = 'add60') {
     this.pendingPasswordAction = action;
-    this.showPasswordPrompt = true; 
-    this.passwordInput = ''; 
+    this.showPasswordPrompt = true;
+    this.passwordInput = '';
     this.passwordError = false;
-    this.focusModal('[data-modal="password-prompt"]');
+    this.keyboardNavService.enterScope('[data-modal="password-prompt"]');
   }
-  cancelPasswordPrompt() { this.showPasswordPrompt = false; }
+  cancelPasswordPrompt() {
+    this.showPasswordPrompt = false;
+    this.keyboardNavService.exitScope();
+  }
 
   openCancelPrompt() {
     this.showCancelPrompt = true;
     this.cancelPasswordInput = '';
     this.cancelPasswordError = false;
-    this.focusModal('[data-modal="cancel-prompt"]');
+    this.keyboardNavService.enterScope('[data-modal="cancel-prompt"]');
   }
-  closeCancelPrompt() { this.showCancelPrompt = false; }
+  closeCancelPrompt() {
+    this.showCancelPrompt = false;
+    this.keyboardNavService.exitScope();
+  }
 
-  validateCancelPassword() {
-    if (this.cancelPasswordInput === this.correctPassword) {
+  async validateCancelPassword() {
+    const isValid = await this.authService.verifyPassword(this.cancelPasswordInput);
+    if (isValid) {
       this.cancelPasswordSuccess = true;
+      this.logging.info('game', 'game_cancelled', { playerCount: this.players.length, initialTimeLimit: this.initialTimeLimit, addedTimeLimit: this.addedTimeLimit });
 
       // Accounting Hook: Mark as Cancelled
       if (this.currentSessionId) {
         const billedMinutes = this.calculateBilledDuration();
-        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
+        this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit, this.players.length);
         this.currentSessionId = null;
       }
 
+      this.keyboardNavService.exitScope();
       setTimeout(() => {
         this.resetGame();
         this.router.navigate(['']);
       }, 1500);
     } else {
+      this.logging.warn('game', 'cancel_password_failed');
       this.cancelPasswordError = true;
     }
   }
 
-  validatePassword() {
-    if (this.passwordInput === this.correctPassword) {
+  async validatePassword() {
+    const isValid = await this.authService.verifyPassword(this.passwordInput);
+    if (isValid) {
+      const wasGameFinished = this.gameFinished;
       if (this.pendingPasswordAction === 'add5') {
         this.timeRemaining += 5 * 60;
         this.timeLimit += 5;
         this.addedTimeLimit += 5;
-        if (this.targetEndTime !== null) {
+        this.compensationTimeAdded = true;
+        this.logging.info('game', 'time_extended', { action: 'add5', addedMinutes: 5, totalAddedMinutes: this.addedTimeLimit });
+        if (wasGameFinished) {
+          this.gameFinished = false;
+          this.targetEndTime = Date.now() + this.timeRemaining * 1000;
+          this.isTimerRunning = true;
+          this.startTimer();
+        } else if (this.targetEndTime !== null) {
           this.targetEndTime += 5 * 60 * 1000;
         }
-        this.compensationTimeAdded = true;
       } else {
         this.timeRemaining += 60 * 60;
         this.timeLimit += 60;
         this.addedTimeLimit += 60;
-        if (this.targetEndTime !== null) {
+        this.extraTimeAdded = true;
+        this.logging.info('game', 'time_extended', { action: 'add60', addedMinutes: 60, totalAddedMinutes: this.addedTimeLimit });
+        if (wasGameFinished) {
+          this.gameFinished = false;
+          this.targetEndTime = Date.now() + this.timeRemaining * 1000;
+          this.isTimerRunning = true;
+          this.startTimer();
+        } else if (this.targetEndTime !== null) {
           this.targetEndTime += 60 * 60 * 1000;
         }
-        this.extraTimeAdded = true;
       }
-      this.alertedAt15 = false;
-      this.alertedAt5 = false;
-      this.stopPending = false; // Si agregaron tiempo, cancelamos el paro pendiente
+      this.alertedAt15 = this.timeRemaining <= 900;
+      this.alertedAt5 = this.timeRemaining <= 300;
+      this.stopPending = false;
       this.showPasswordPrompt = false;
       this.showTimeWarning = false;
+      this.keyboardNavService.exitScope(); // sale del scope password-prompt
+      if (wasGameFinished) {
+        this.keyboardNavService.exitScope(); // sale del scope game-finished
+      }
     } else {
+      this.logging.warn('game', 'time_add_password_failed', { action: this.pendingPasswordAction });
       this.passwordError = true;
     }
   }
@@ -862,6 +969,35 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   removePlayer() {
     if (this.players.length > 1 && !this.gameStarted) {
       this.players = this.players.slice(0, -1);
+    }
+  }
+
+  openPlayerManagementModal() {
+    this.showPlayerManagementModal = true;
+    this.keyboardNavService.enterScope('[data-modal="player-management"]');
+  }
+
+  closePlayerManagementModal() {
+    this.showPlayerManagementModal = false;
+    this.keyboardNavService.exitScope();
+  }
+
+  addPlayerMidGame() {
+    if (this.players.length < 9) {
+      this.players.push({
+        name: '',
+        frames: this.createInitialFrames(),
+        completedGames: [],
+        currentGameNumber: 1
+      });
+    }
+  }
+
+  removePlayerMidGame(pIndex: number) {
+    if (this.players.length <= 1 || pIndex === this.currentPlayer) return;
+    this.players.splice(pIndex, 1);
+    if (pIndex < this.currentPlayer) {
+      this.currentPlayer--;
     }
   }
 
@@ -997,15 +1133,17 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Recalcular hasta el índice deseado para obtener el acumulado correcto
     for (let i = 0; i <= frameIndex; i++) {
+      // Frame no iniciado (jugador se unió después de este frame): ignorar
+      if (player.frames[i][0] === null) continue;
       const frameScore = this.calculateFrameScore(player.frames, i);
       if (frameScore === null) {
-        return null; // Si un frame anterior está incompleto, no mostramos totales futuros
-      } else {
-        cumulative += frameScore;
+        return null; // Frame iniciado pero incompleto: no mostramos totales futuros
       }
+      cumulative += frameScore;
     }
 
     // Verificamos si el frame actual ya tiene score calculado
+    if (player.frames[frameIndex][0] === null) return null;
     if (this.calculateFrameScore(player.frames, frameIndex) === null) return null;
 
     return cumulative;
@@ -1016,7 +1154,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // VALIDACIÓN 1: Pinos deben estar entre 0 y 10
     if (pins < 0 || pins > 10) {
-      console.error('Error: Los pinos deben estar entre 0 y 10');
+      this.logging.error('game', 'invalid_pin_count', undefined, { pins, currentFrame: this.currentFrame, currentPlayer: this.currentPlayer });
       return;
     }
 
@@ -1162,14 +1300,16 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.gameFinished = true;
     this.cdr.detectChanges();
     this.stopTimer();
-    this.focusModal('[data-modal="game-finished"]');
+    this.keyboardNavService.enterScope('[data-modal="game-finished"]');
 
     // Accounting Hook
     if (this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
-      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed', this.initialTimeLimit, this.addedTimeLimit);
-      this.currentSessionId = null;
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'completed', this.initialTimeLimit, this.addedTimeLimit, this.players.length);
+      // No nulleamos currentSessionId aquí: si se dan +5min desde el modal de juego terminado,
+      // finishGame() se llamará de nuevo y actualizará el mismo registro con el addedTimeLimit correcto.
     }
+    this.logging.info('game', 'game_finished', { playerCount: this.players.length, initialTimeLimit: this.initialTimeLimit, addedTimeLimit: this.addedTimeLimit });
   }
 
   resetGame() {
@@ -1177,9 +1317,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     // This is a fallback or for development reset.
     if (this.gameStarted && !this.gameFinished && this.currentSessionId) {
       const billedMinutes = this.calculateBilledDuration();
-      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit);
-      this.currentSessionId = null;
+      this.accountingService.endGame(this.currentSessionId, billedMinutes, 'cancelled', this.initialTimeLimit, this.addedTimeLimit, this.players.length);
     }
+    this.currentSessionId = null;
 
     this.players = [{
       name: '',
@@ -1214,9 +1354,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.cancelPasswordSuccess = false;
     this.editingScore = null;
 
-    // Ensure timer restarts if needed (though existing logic stops it)
-    this.startTimer();
+    this.stopTimer();
   }
+
 
   startGame() {
     this.gameStarted = true;
@@ -1225,6 +1365,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
 
     // Accounting Hook
     this.currentSessionId = this.accountingService.startGame(this.players.length);
+    this.logging.info('game', 'game_started', { playerCount: this.players.length, timeLimitMinutes: this.timeLimit });
   }
 
   changeTimeLimit(minutes: number) {
@@ -1246,8 +1387,9 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
         return frame[0] === 10 ? 10 : 10 - (frame[0] || 0);
       }
       if (this.currentRoll === 2) {
-        // Tercer tiro: si el segundo fue strike, resetea a 10; sino, lo que queda
-        return frame[1] === 10 ? 10 : 10 - (frame[1] || 0);
+        if (frame[1] === 10) return 10; // Segundo fue strike: reset completo
+        if (frame[0] === 10) return 10 - (frame[1] || 0); // Primer fue strike, segundo no: pines restantes
+        return 10; // Spare (ej. 7+3): reset completo
       }
     }
 
@@ -1256,12 +1398,19 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     return 10 - (frame[0] || 0);
   }
 
-  displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false): string {
+  displayRoll(roll: number | null, previousRoll: number | null, isFrame10: boolean = false, prevPrevRoll: number | null = null): string {
     if (roll === null) return '';
 
-    // Frame 10: mostrar siempre el número o X
+    // Frame 10: mostrar X, spare (/), guión o número
     if (isFrame10) {
-      if (roll === 10) return 'X';
+      // Los pines se resetean antes de este tiro si los dos anteriores fueron spare (ej: 5+5)
+      const pinsWereReset = prevPrevRoll !== null && prevPrevRoll !== 10 && prevPrevRoll + (previousRoll ?? 0) === 10;
+      if (roll === 10) {
+        // "X" si es un strike verdadero: primer tiro, tiro anterior fue strike, o pines reseteados por spare
+        if (previousRoll === null || previousRoll === 10 || pinsWereReset) return 'X';
+        return '/'; // Tumba todos los pines restantes del tiro anterior → spare
+      }
+      if (previousRoll !== null && previousRoll !== 10 && previousRoll + roll === 10 && !pinsWereReset) return '/';
       if (roll === 0) return '-';
       return roll.toString();
     }

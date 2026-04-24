@@ -1,19 +1,23 @@
 import { Injectable } from '@angular/core';
 import { GameSession, DailySummary } from '../models/accounting.models';
 import * as XLSX from 'xlsx';
+import { LoggingService } from './logging.service';
+import { environment } from '../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AccountingService {
     private readonly STORAGE_KEY = 'bowling_daily_sessions';
-    private readonly STATE_KEY_REMOVED = ''; // Removed
+    private readonly DAY_OPEN_KEY = 'bowling_day_open';
 
     private currentSessions: GameSession[] = [];
     public isDayOpen = false;
+    public isClosingDay = false;
 
-    constructor() {
+    constructor(private logging: LoggingService) {
         this.loadSessions();
+        this.isDayOpen = localStorage.getItem(this.DAY_OPEN_KEY) === 'true';
     }
 
     private loadSessions() {
@@ -25,7 +29,7 @@ export class AccountingService {
                 // For simplicity, we load everything in the "current bucket" until closed.
                 this.currentSessions = parsed;
             } catch (e) {
-                console.error('Error loading sessions', e);
+                this.logging.error('accounting', 'sessions_load_failed', e as Error);
                 this.currentSessions = [];
             }
         }
@@ -36,6 +40,9 @@ export class AccountingService {
     }
 
     startGame(playerCount: number, laneId: number = 1): string {
+        const existing = this.getActiveSession();
+        if (existing) return existing.id;
+
         const id = Date.now().toString(); // Simple ID
         const session: GameSession = {
             id,
@@ -48,10 +55,11 @@ export class AccountingService {
         };
         this.currentSessions.push(session);
         this.saveSessions();
+        this.logging.info('accounting', 'game_session_started', { sessionId: id, playerCount, laneId });
         return id;
     }
 
-    endGame(sessionId: string, billedDurationMinutes?: number, status: 'completed' | 'cancelled' = 'completed', initialTimeMinutes: number = 0, addedTimeMinutes: number = 0): GameSession | null {
+    endGame(sessionId: string, billedDurationMinutes?: number, status: 'completed' | 'cancelled' = 'completed', initialTimeMinutes: number = 0, addedTimeMinutes: number = 0, finalPlayerCount?: number): GameSession | null {
         const index = this.currentSessions.findIndex(s => s.id === sessionId);
         if (index === -1) return null;
 
@@ -60,6 +68,7 @@ export class AccountingService {
         session.status = status;
         session.initialTimeMinutes = initialTimeMinutes;
         session.addedTimeMinutes = addedTimeMinutes;
+        if (finalPlayerCount !== undefined) session.playerCount = finalPlayerCount;
 
         if (billedDurationMinutes !== undefined) {
             session.totalTimeMinutes = billedDurationMinutes;
@@ -71,6 +80,7 @@ export class AccountingService {
 
         this.currentSessions[index] = session;
         this.saveSessions();
+        this.logging.info('accounting', 'game_session_ended', { sessionId, status, totalTimeMinutes: session.totalTimeMinutes, initialTimeMinutes, addedTimeMinutes });
         return session;
     }
 
@@ -80,27 +90,42 @@ export class AccountingService {
     }
 
     getTodaySummary(): DailySummary {
-        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        // Usamos la hora local en lugar de UTC para que los cierres nocturnos tengan la fecha correcta
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         const finishedSessions = this.currentSessions.filter(s => s.endTime !== null);
         const completedSessions = finishedSessions.filter(s => s.status === 'completed');
 
-        const totalTime = finishedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
+        const cancelledSessions = finishedSessions.filter(s => s.status === 'cancelled');
+        const completedTime = completedSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
+        const cancelledTime = cancelledSessions.reduce((acc, curr) => acc + curr.totalTimeMinutes, 0);
 
         return {
             date: today,
-            totalTimeMinutes: totalTime,
+            totalTimeMinutes: completedTime + cancelledTime,
+            completedTimeMinutes: completedTime,
+            cancelledTimeMinutes: cancelledTime,
             totalGames: completedSessions.length,
+            cancelledGames: cancelledSessions.length,
             sessions: finishedSessions
         };
     }
 
     openDay() {
         this.isDayOpen = true;
+        localStorage.setItem(this.DAY_OPEN_KEY, 'true');
+        this.logging.info('accounting', 'day_opened');
         // Optional: Archive old sessions if they exist from a previous unclosed day?
         // For now, we keep them as part of the "Current Open Day" bucket.
     }
 
     closeDayAndExport(laneName: string = ''): void {
+        if (this.isClosingDay) return;
+        this.isClosingDay = true;
+
         const summary = this.getTodaySummary();
 
         // 1. Create a Worksheet for Summary
@@ -115,11 +140,12 @@ export class AccountingService {
         ];
 
         // 2. Create Header Row for Details
-        const headers = ['ID', 'Inicio', 'Fin', 'Tiempo Inicial (min)', 'Tiempo Extra (min)', 'Duración Total (min)', 'Estado'];
+        const headers = ['ID', 'Inicio', 'Fin', 'Jugadores', 'Tiempo Inicial (min)', 'Tiempo Extra (min)', 'Duración Total (min)', 'Estado'];
         const detailsData = summary.sessions.map(s => [
             s.id,
             new Date(s.startTime).toLocaleTimeString(),
             s.endTime ? new Date(s.endTime).toLocaleTimeString() : 'N/A',
+            s.playerCount,
             s.initialTimeMinutes || 0,
             s.addedTimeMinutes || 0,
             s.totalTimeMinutes,
@@ -154,32 +180,43 @@ export class AccountingService {
             const baseUrl = isDesktop ? 'https://labolerauniverso.nick-bern.com' : '';
             const fetchUrl = `${baseUrl}/api/send-email`;
 
-            // Usa un fire-and-forget para no bloquear el cierre en caso de red lenta
+            // Fire-and-forget: no bloqueamos la UI, pero las sesiones solo se borran
+            // cuando el request termina (éxito o error) para poder reintentar si falla.
+            const clearDay = () => {
+                this.logging.info('accounting', 'day_closed', { laneName, totalGames: summary.totalGames, totalTimeMinutes: summary.totalTimeMinutes });
+                this.currentSessions = [];
+                this.saveSessions();
+                localStorage.removeItem(this.DAY_OPEN_KEY);
+                this.isDayOpen = false;
+                this.isClosingDay = false;
+            };
+
             fetch(fetchUrl, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json', 'X-Api-Secret': environment.apiSecret },
                 body: JSON.stringify({
                     date: summary.date,
-                    totalGames: summary.totalGames,
+                    completedTimeMinutes: summary.completedTimeMinutes,
+                    cancelledTimeMinutes: summary.cancelledTimeMinutes,
+                    totalTimeMinutes: summary.totalTimeMinutes,
                     filename: fileName,
-                    laneName: laneName, // Pasamos el nombre de la pista a la API
+                    laneName: laneName,
                     excelBase64: excelBase64
                 })
             }).then(response => {
                 if (response.ok) {
-                    console.log('✅ Correo de cierre de caja enviado con éxito');
+                    this.logging.info('accounting', 'email_sent', { laneName, date: summary.date });
                 } else {
-                    response.json().then(err => console.error('❌ Error API al enviar correo:', err));
+                    response.json().then(err => this.logging.error('accounting', 'email_failed', undefined, { laneName, apiError: err }));
                 }
-            }).catch(err => console.error('❌ Error de red enviando correo:', err));
+                clearDay();
+            }).catch(err => {
+                this.logging.error('accounting', 'email_network_error', err as Error, { laneName });
+                clearDay();
+            });
         } catch (e) {
-            console.error('Error al generar adjunto para envío:', e);
+            this.logging.error('accounting', 'email_attachment_failed', e as Error);
+            this.isClosingDay = false;
         }
-
-        // 6. Clear Current Sessions & Close Day
-        this.currentSessions = [];
-        this.saveSessions();
-
-        this.isDayOpen = false;
     }
 }
