@@ -2,7 +2,10 @@ import { Injectable } from '@angular/core';
 import { GameSession, DailySummary } from '../models/accounting.models';
 import * as XLSX from 'xlsx';
 import { LoggingService } from './logging.service';
+import { SupabaseService } from './supabase';
 import { environment } from '../../environments/environment';
+
+const DEVICE_TOKEN_KEY = 'bowling_device_token';
 
 @Injectable({
     providedIn: 'root'
@@ -15,7 +18,7 @@ export class AccountingService {
     public isDayOpen = false;
     public isClosingDay = false;
 
-    constructor(private logging: LoggingService) {
+    constructor(private logging: LoggingService, private supabaseService: SupabaseService) {
         this.loadSessions();
         this.isDayOpen = localStorage.getItem(this.DAY_OPEN_KEY) === 'true';
     }
@@ -117,9 +120,45 @@ export class AccountingService {
     openDay() {
         this.isDayOpen = true;
         localStorage.setItem(this.DAY_OPEN_KEY, 'true');
-        this.logging.info('accounting', 'day_opened');
+        // Log enriquecido con nombre del dispositivo + hora local (UTC-5). Fire-and-forget
+        // para no bloquear la UI: la caja se abre inmediatamente y el log llega en background.
+        void this.logOpenDay();
         // Optional: Archive old sessions if they exist from a previous unclosed day?
         // For now, we keep them as part of the "Current Open Day" bucket.
+    }
+
+    /**
+     * Emite el log `day_opened` con detalles útiles para auditoría desde el dashboard de Supabase:
+     *   - deviceName: nombre humano del dispositivo (query a authorized_devices).
+     *   - openedAt: hora local en zona America/Bogota (UTC-5, sin DST), formato "YYYY-MM-DD HH:mm:ss".
+     * Si la query o el token fallan, deviceName queda null y el log se emite igual con la hora.
+     */
+    private async logOpenDay(): Promise<void> {
+        // Formato "2026-08-24 15:32:45" en zona America/Bogota. El locale sv-SE genera el
+        // separador con espacio en vez de "T", que es exactamente el formato SQL legible.
+        const openedAt = new Intl.DateTimeFormat('sv-SE', {
+            timeZone: 'America/Bogota',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false,
+        }).format(new Date());
+
+        let deviceName: string | null = null;
+        const deviceToken = localStorage.getItem(DEVICE_TOKEN_KEY);
+
+        if (deviceToken) {
+            const { data, error } = await this.supabaseService.client
+                .from('authorized_devices')
+                .select('device_name')
+                .eq('device_token', deviceToken)
+                .single();
+
+            if (data && !error) {
+                deviceName = data.device_name ?? null;
+            }
+        }
+
+        this.logging.info('accounting', 'day_opened', { deviceName, openedAt });
     }
 
     closeDayAndExport(laneName: string = ''): void {
