@@ -19,8 +19,17 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "assets": [
-              "src/favicon.ico",
-              "src/assets"
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets",
+                "ignore": [
+                  "**/.DS_Store",
+                  "icons/icon.icns",
+                  "icons/icon.png",
+                  "images/default-background.webp"
+                ]
+              }
             ],
             "styles": [
               "src/styles.css"

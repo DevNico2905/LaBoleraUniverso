@@ -2,10 +2,12 @@
 
 **Fecha:** 2026-08-24
 **Rama de trabajo:** `Antigravity`
-**Estado:** 🔍 Auditoría completada — ⏸️ PAUSADO esperando datos de red del cliente y decisión de alcance
+**Estado:** 🔍 Auditoría completada — 🟡 PARCIALMENTE EJECUTADA (ver §11)
 **Solicitado por:** Nicolás — reportó sensación de lentitud en vistas principales
 
-> **Nota:** a diferencia de las Impls 001 y 002 (features implementadas), este documento es una **investigación de rendimiento en pausa**. Contiene todos los hallazgos, comandos pendientes y priorización para que en la próxima sesión se pueda retomar sin re-descubrir.
+> **Nota:** a diferencia de las Impls 001 y 002 (features implementadas), este documento es una **investigación de rendimiento**. Contiene todos los hallazgos, comandos pendientes y priorización para poder retomar sin re-descubrir.
+>
+> **⚠️ Leer §11 antes que nada.** Parte de esta auditoría ya se ejecutó y parte se descartó por decisión del usuario. Además, varios números de este documento fueron **corregidos** al verificarlos contra el código.
 
 ---
 
@@ -325,3 +327,48 @@ Este documento cruza con las memorias del proyecto ya guardadas (ver `~/.claude/
 
 - `[[kiosk-operating-model]]` — la app es kiosko por pista; usuarios son operadores que la abren muchas veces al día → cada TTFB de 6.5 s es fricción real.
 - `[[non-obvious-behaviors]]` — el `stopPending` del timer y otros patrones de CD son relevantes al migrar `bowling-scorer` a `OnPush`.
+
+---
+
+## 11. Actualización — 2026-08-24 (sesión de retoma)
+
+Al retomar, el usuario **descartó la vía TTFB / Speed Insights** (§5.1, §5.2, §6 #1–#3, §7, §8 Fase 1) por considerar esos datos relativos a una ventana de medición concreta, y pidió enfocarse en los hallazgos de la primera auditoría: **peso y CD**. Luego acotó a **solo peso**.
+
+### Qué se ejecutó
+
+**✅ Peso** → implementado y documentado en [`004-optimizacion-peso.md`](004-optimizacion-peso.md).
+Resultado: `dist/` **6.2 MB → 1.2 MB** (−81%); chunks iniciales **264 KB → 252 KB gzip** (−4.7%). Cubre los hallazgos #4, #7, #8, #9 y #13 de la tabla de §6.
+
+**↩️ Hallazgo #5 (`xlsx` fuera del bundle): implementado y luego REVERTIDO.** Sacar xlsx del chunk inicial obliga a que `closeDayAndExport` sea asíncrono, lo que agrega una ruta de fallo nueva al cierre de caja — el flujo irreversible que mueve dinero. El usuario decidió que ~95 KB gzip no lo justifican. Ver §4.4 de la 004. **Si se retoma, hay que resolver primero qué hace la UI cuando el chunk no carga.**
+
+### Qué NO se ejecutó
+
+- **CD / INP** (#10, #12) — fuera de alcance por decisión explícita del usuario. **Sigue abierto.**
+- **TTFB, `vercel.json`, región, Speed Insights por ruta** (#1, #2, #3) — descartado por el usuario.
+- **`preconnect` a Supabase** (#6) — no se hizo; iba junto con la vía descartada, pero es independiente y sigue siendo válido.
+- **`restoreSession` retry de 4.5 s** (#11) — sigue abierto.
+
+### Correcciones a este documento
+
+Verificadas contra el código al retomar. **Los números originales de arriba están mal en estos puntos:**
+
+| Dice este doc | Realidad verificada |
+|---|---|
+| §2.1 `dist/` = 7.2 MB | Eran 6.2 MB |
+| §5.5 `main.js` = 207 KB gzip | 244 KB medido con `gzip -c` |
+| §2.3 / §6 "hasta 2700 llamadas a `isRollEditable` por ciclo" | **945.** Los 30 del template cuentan las dos ramas del `*ngIf` (solo renderiza una) y los `(click)`, que no corren en CD |
+| §2.2 "`logo.png` no lo usa nadie" | Correcto, pero por casualidad: el grep original daba falso positivo porque `brand-logo.png` contiene el substring `logo.png` |
+| §2.6 `KeyboardNavService` "no es catastrófico" | **Sí lo es.** Hace `getComputedStyle()` en loop (`keyboard-nav.service.ts:52`) → *forced reflow* por cada tecla sobre 100+ elementos en modo edición. Probablemente el peor contribuyente al INP |
+
+### Hallazgos de CD que este documento no tenía
+
+Al verificar §2.3 aparecieron dos cosas más caras que `isRollEditable`:
+
+- **`getFrameScoreForDisplay` es O(n²)**: 90 llamadas por ciclo, cada una recalculando desde el frame 0. Sumado a `getAccumulatedScore`, dan **~765 llamadas a `calculateFrameScore` por ciclo de CD**.
+- **Ningún `*ngFor` usa `trackBy`**, y `[].constructor(10)` (`bowling-scorer.html:148`) crea un array nuevo cada ciclo, forzando el diff completo del header.
+
+Todo esto corre **2 veces por segundo** durante toda la partida, porque zone.js parchea el `setInterval(500ms)` del timer y dispara CD aunque `timeRemaining` no cambie.
+
+### Dato suelto que quedó medido
+
+Se alcanzaron a correr algunos comandos de §7 desde la red del usuario antes de descartar la vía. Para el registro: **TTFB 0.556 s, 0 redirecciones, `x-vercel-cache: HIT`** — o sea, el P75 de 6.51 s de Speed Insights no se reprodujo en esa medición puntual. No es concluyente (una muestra, cache caliente), pero es coherente con la decisión de despriorizar esa vía.

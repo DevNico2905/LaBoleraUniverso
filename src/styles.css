@@ -1,6 +1,14 @@
 /* You can add global styles to this file, and also import other style files */
 @import "tailwindcss";
 
+/* Tailwind 4 autodetecta fuentes en TODO el proyecto, incluidos los .md.
+   Los docs de Impls/ y el README citan clases de ejemplo (p. ej. utilidades con
+   valores arbitrarios de url) que Tailwind tomaría como clases reales e intentaría
+   resolver, rompiendo el build. Acá solo se escanea código de la app. */
+@source not "../Impls";
+@source not "../README.md";
+@source not "../CLAUDE.md";
+
 html {
   font-size: 20px;
 }
