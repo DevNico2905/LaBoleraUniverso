@@ -68,7 +68,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   passwordError = false;
   extraTimeAdded = false;
   compensationTimeAdded = false;
-  pendingPasswordAction: 'add60' | 'add5' = 'add60';
+  pendingPasswordAction: 'add60' | 'add30' | 'add5' = 'add60';
 
   editMode = false;
   editingScore: { pIndex: number, fIndex: number, rIndex: number } | null = null;
@@ -305,7 +305,7 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
   }
 
 
-  openPasswordPrompt(action: 'add60' | 'add5' = 'add60') {
+  openPasswordPrompt(action: 'add60' | 'add30' | 'add5' = 'add60') {
     this.pendingPasswordAction = action;
     this.showPasswordPrompt = true;
     this.passwordInput = '';
@@ -369,6 +369,19 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
           this.startTimer();
         } else if (this.targetEndTime !== null) {
           this.targetEndTime += 5 * 60 * 1000;
+        }
+      } else if (this.pendingPasswordAction === 'add30') {
+        this.timeRemaining += 30 * 60;
+        this.timeLimit += 30;
+        this.addedTimeLimit += 30;
+        this.logging.info('game', 'time_extended', { action: 'add30', addedMinutes: 30, totalAddedMinutes: this.addedTimeLimit });
+        if (wasGameFinished) {
+          this.gameFinished = false;
+          this.targetEndTime = Date.now() + this.timeRemaining * 1000;
+          this.isTimerRunning = true;
+          this.startTimer();
+        } else if (this.targetEndTime !== null) {
+          this.targetEndTime += 30 * 60 * 1000;
         }
       } else {
         this.timeRemaining += 60 * 60;
@@ -807,6 +820,12 @@ export class BowlingScorerComponent implements OnInit, OnDestroy {
     this.gameStarted = true;
     this.isTimerRunning = true;
     this.targetEndTime = Date.now() + (this.timeRemaining * 1000);
+
+    // Partidas cortas (≤30 min): omitir alerta de 15 min — saltaría a la mitad del juego y es intrusiva.
+    // La alerta de 5 min sigue activa como último aviso.
+    if (this.initialTimeLimit <= 30) {
+      this.alertedAt15 = true;
+    }
 
     // Accounting Hook
     this.currentSessionId = this.accountingService.startGame(this.players.length);
